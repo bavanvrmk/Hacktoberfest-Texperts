@@ -24,7 +24,7 @@ class VisionGrounder:
         self.client = client or LLMClient()
         
     def build_prompt(self, target_description, base64_image):
-        """Constructs the vision prompt payload."""
+        """Constructs the vision prompt payload with token compression."""
         messages = [
             {"role": "system", "content": VISION_SYSTEM_PROMPT},
             {
@@ -33,7 +33,8 @@ class VisionGrounder:
                     {
                         "type": "image_url",
                         "image_url": {
-                            "url": f"data:image/png;base64,{base64_image}"
+                            "url": f"data:image/png;base64,{base64_image}",
+                            "detail": "low"  # Forces the model to use fewer tokens for the image
                         }
                     },
                     {
@@ -83,11 +84,14 @@ class VisionGrounder:
             raise Exception(f"Failed to decode JSON from model: {e}\nRaw output: {response_text}")
 
     def find_element(self, image_path, target_description):
-        """End-to-end pipeline to find an element."""
+        """End-to-end pipeline to find an element with low latency parameters."""
         b64_img = encode_image_to_base64(image_path)
         messages = self.build_prompt(target_description, b64_img)
         
-        response = self.client.chat_completion(messages, temperature=0.1, max_tokens=150)
+        # Optimize for sub-500ms latency:
+        # - temperature=0.0 removes sampling overhead
+        # - max_tokens=50 caps the output generation, saving time
+        response = self.client.chat_completion(messages, temperature=0.0, max_tokens=50)
         
         if "choices" in response and len(response["choices"]) > 0:
             content = response["choices"][0]["message"]["content"]
