@@ -1,24 +1,41 @@
+# Python bytecode & cache
 __pycache__/
+*.py[cod]
 *.pyc
 *.pyo
 *.pyd
 .Python
-env/
+*$py.class
+
+# Environments & binaries
 venv/
+env/
+ENV/
 .env
+*.zip
+llama.cpp/
+llama-server.exe
+*.gguf
+*.bin
 
-# Test outputs and images
-mock_screen.jpg
-mock_screen_redacted.jpg
-*.jpg
-*.png
-
-# Databases and execution logs
+# Test outputs, screenshots, and logs
 logs/
+*.log
 *.db
 *.sqlite3
-
 # Models
 Models/
 models/
-*.gguf
+
+mock_screen.jpg
+mock_screen_redacted.jpg
+screenshot*.png
+test_*.png
+before_*.png
+after_*.png
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

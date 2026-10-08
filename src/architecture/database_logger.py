@@ -31,6 +31,8 @@ def init_db():
 
 def log_task_start(task_name):
     """Logs the start of a task and returns the task ID."""
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    init_db()
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     

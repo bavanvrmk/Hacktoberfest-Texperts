@@ -1,90 +1,237 @@
+"""
+ROI Dashboard & Analytics Module (Member 4 Architecture Deliverable)
+FastAPI web interface rendering real-time execution logs, cumulative cloud cost savings,
+and live ROI calculations with auto-refresh.
+"""
+
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 import sqlite3
 import os
-from .roi_calculator import calculate_financial_roi
-from .database_logger import DB_PATH
+import sys
 
-app = FastAPI(title="ROI & Compliance Dashboard")
+# Ensure root workspace is in sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
-# Ensure template directory exists
+from src.architecture.roi_calculator import calculate_financial_roi
+from src.architecture.database_logger import DB_PATH, init_db
+
+app = FastAPI(title="Shadow Automator - Live ROI & Compliance Dashboard")
+
+# Ensure DB exists
+init_db()
+
 template_dir = os.path.join(os.path.dirname(__file__), "templates")
 os.makedirs(template_dir, exist_ok=True)
-
-# Generate a minimal HTML template if it doesn't exist
 template_file = os.path.join(template_dir, "dashboard.html")
-if not os.path.exists(template_file):
-    with open(template_file, "w") as f:
-        f.write("""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>ROI Dashboard</title>
-            <style>
-                body { font-family: 'Segoe UI', sans-serif; background-color: #0f172a; color: white; margin: 40px; }
-                h1 { color: #3b82f6; }
-                .card { background-color: #1e293b; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
-                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                th, td { padding: 12px; border-bottom: 1px solid #334155; text-align: left; }
-                th { background-color: #3b82f6; color: white; }
-            </style>
-        </head>
-        <body>
-            <h1>Automator ROI & Compliance Dashboard</h1>
-            
-            <div class="card">
-                <h2>Financial ROI</h2>
-                <p><strong>Cloud Costs Saved:</strong> ${{ roi.cloud_savings_usd }}</p>
-                <p><strong>Human Hours Saved:</strong> {{ roi.hours_saved }} hrs</p>
-                <p><strong>Labor Savings:</strong> ${{ roi.labor_savings_usd }}</p>
-                <h3 style="color: #10b981;">Total Savings: ${{ roi.total_savings_usd }}</h3>
+
+# Write modern, responsive Dark Theme Dashboard UI
+with open(template_file, "w", encoding="utf-8") as f:
+    f.write("""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shadow Automator — Live ROI & Metrics</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #090d16;
+            --surface: #111827;
+            --surface-hover: #1f2937;
+            --border: #1e293b;
+            --accent-blue: #38bdf8;
+            --accent-emerald: #10b981;
+            --accent-amber: #f59e0b;
+            --text-primary: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; }
+        body { background-color: var(--bg); color: var(--text-primary); padding: 32px; min-height: 100vh; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
+        .logo-group { display: flex; align-items: center; gap: 12px; }
+        .logo-badge { background: linear-gradient(135deg, #0284c7, #38bdf8); width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 0 20px rgba(56,189,248,0.3); }
+        h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+        .sub { font-size: 13px; color: var(--text-muted); }
+        .live-pill { display: flex; align-items: center; gap: 8px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 6px 14px; border-radius: 9999px; font-size: 12px; font-weight: 600; color: var(--accent-emerald); }
+        .live-dot { width: 8px; height: 8px; border-radius: 50%; background-color: var(--accent-emerald); box-shadow: 0 0 10px var(--accent-emerald); animation: pulse 1.8s infinite; }
+        
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; margin-bottom: 28px; }
+        .metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px; display: flex; flex-direction: column; gap: 8px; position: relative; overflow: hidden; }
+        .metric-card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, transparent, var(--accent-blue), transparent); opacity: 0.4; }
+        .metric-label { font-size: 13px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
+        .metric-val { font-size: 32px; font-weight: 700; color: #fff; }
+        .metric-footer { font-size: 12px; color: var(--text-muted); }
+
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+        .card-title { font-size: 18px; font-weight: 600; }
+
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { padding: 12px 16px; font-size: 12px; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); font-weight: 600; }
+        td { padding: 14px 16px; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.03); color: #cbd5e1; }
+        tr:hover td { background-color: var(--surface-hover); }
+        .mono { font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+        .badge-success { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+        .badge-running { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
+        .badge-failed { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo-group">
+                <div class="logo-badge">⚡</div>
+                <div>
+                    <h1>Shadow Automator — Live ROI Engine</h1>
+                    <p class="sub">Real-Time Cost Savings & Autonomous Task Analytics</p>
+                </div>
             </div>
-            
-            <div class="card">
-                <h2>Execution Logs</h2>
-                <table>
+            <div class="live-pill">
+                <div class="live-dot"></div> Live Telemetry Active
+            </div>
+        </header>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <span class="metric-label">Cloud Vision API Costs Avoided</span>
+                <span class="metric-val" id="val-cloud-saved">${{ roi.cloud_savings_usd }}</span>
+                <span class="metric-footer">Compared to Cloud GPT-4V APIs</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Human Labor Hours Saved</span>
+                <span class="metric-val" id="val-hours-saved">{{ roi.hours_saved }} hrs</span>
+                <span class="metric-footer">At ~3.0 min/manual workflow</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Estimated Labor Savings</span>
+                <span class="metric-val" id="val-labor-saved">${{ roi.labor_savings_usd }}</span>
+                <span class="metric-footer">Based on $25.00/hr baseline</span>
+            </div>
+            <div class="metric-card" style="border-color: rgba(16, 185, 129, 0.4);">
+                <span class="metric-label" style="color: var(--accent-emerald);">Total Financial ROI</span>
+                <span class="metric-val" style="color: var(--accent-emerald);" id="val-total-roi">${{ roi.total_savings_usd }}</span>
+                <span class="metric-footer">Net Value Created Locally</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">Real-Time Automation Logs</div>
+                <span class="sub" id="log-count">Total Executions: {{ logs|length }}</span>
+            </div>
+            <table>
+                <thead>
                     <tr>
-                        <th>ID</th><th>Task Name</th><th>Start Time</th><th>Duration (ms)</th><th>Status</th>
+                        <th>ID</th>
+                        <th>Workflow Task</th>
+                        <th>Start Time</th>
+                        <th>Duration</th>
+                        <th>Status</th>
+                        <th>Notes</th>
                     </tr>
+                </thead>
+                <tbody id="logs-tbody">
                     {% for row in logs %}
                     <tr>
-                        <td>{{ row[0] }}</td><td>{{ row[1] }}</td><td>{{ row[2] }}</td><td>{{ row[4] }}</td><td>{{ row[5] }}</td>
+                        <td class="mono">#{{ row[0] }}</td>
+                        <td><strong>{{ row[1] }}</strong></td>
+                        <td class="mono">{{ row[2] }}</td>
+                        <td class="mono">{{ row[4] if row[4] else '—' }} ms</td>
+                        <td>
+                            <span class="badge {% if row[5] == 'completed' %}badge-success{% elif row[5] == 'running' %}badge-running{% else %}badge-failed{% endif %}">
+                                {{ row[5] }}
+                            </span>
+                        </td>
+                        <td style="color: var(--text-muted);">{{ row[7] if row[7] else '' }}</td>
                     </tr>
                     {% endfor %}
-                </table>
-            </div>
-        </body>
-        </html>
-        """)
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Real-Time auto polling every 3 seconds
+        async function fetchLiveMetrics() {
+            try {
+                const res = await fetch('/api/stats');
+                const data = await res.json();
+                
+                document.getElementById('val-cloud-saved').innerText = '$' + data.roi.cloud_savings_usd.toFixed(2);
+                document.getElementById('val-hours-saved').innerText = data.roi.hours_saved.toFixed(2) + ' hrs';
+                document.getElementById('val-labor-saved').innerText = '$' + data.roi.labor_savings_usd.toFixed(2);
+                document.getElementById('val-total-roi').innerText = '$' + data.roi.total_savings_usd.toFixed(2);
+                document.getElementById('log-count').innerText = 'Total Executions: ' + data.logs.length;
+
+                const tbody = document.getElementById('logs-tbody');
+                tbody.innerHTML = data.logs.map(row => `
+                    <tr>
+                        <td class="mono">#${row[0]}</td>
+                        <td><strong>${row[1]}</strong></td>
+                        <td class="mono">${row[2]}</td>
+                        <td class="mono">${row[4] ? row[4] + ' ms' : '—'}</td>
+                        <td>
+                            <span class="badge ${row[5] === 'completed' ? 'badge-success' : (row[5] === 'running' ? 'badge-running' : 'badge-failed')}">
+                                ${row[5]}
+                            </span>
+                        </td>
+                        <td style="color: #94a3b8;">${row[7] || ''}</td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error("Live fetch failed", err);
+            }
+        }
+        setInterval(fetchLiveMetrics, 3000);
+    </script>
+</body>
+</html>
+""")
 
 templates = Jinja2Templates(directory=template_dir)
 
-@app.get("/", response_class=HTMLResponse)
-async def read_dashboard(request: Request):
+def get_stats_data():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    
     try:
         cursor.execute("SELECT * FROM execution_logs ORDER BY id DESC LIMIT 50")
         logs = cursor.fetchall()
-        
-        # Count total tasks for ROI
         cursor.execute("SELECT COUNT(*) FROM execution_logs WHERE status='completed'")
         num_tasks = cursor.fetchone()[0]
-    except sqlite3.OperationalError:
+    except Exception:
         logs = []
         num_tasks = 0
-        
-    conn.close()
-    
+    finally:
+        conn.close()
+
     roi_data = calculate_financial_roi(num_requests=num_tasks, num_automated_tasks=num_tasks)
-    
+    return logs, roi_data
+
+@app.get("/", response_class=HTMLResponse)
+async def read_dashboard(request: Request):
+    logs, roi_data = get_stats_data()
     return templates.TemplateResponse("dashboard.html", {
         "request": request, 
         "logs": logs,
         "roi": roi_data
     })
+
+@app.get("/api/stats", response_class=JSONResponse)
+async def api_stats():
+    logs, roi_data = get_stats_data()
+    return {
+        "logs": logs,
+        "roi": roi_data
+    }
 
 if __name__ == "__main__":
     import uvicorn
