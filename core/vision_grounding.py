@@ -1,5 +1,4 @@
 import json
-import base64
 from .llm_client import LLMClient
 
 # System prompt forcing the model to return JSON with [x1, y1, x2, y2]
@@ -16,8 +15,7 @@ Do not include any other text or markdown formatting outside the JSON block.
 """
 
 def encode_image_to_base64(image_path):
-    with open(image_path, "rb") as image_file:
-        return base64.b64encode(image_file.read()).decode("utf-8")
+    return LLMClient().encode_image_base64(image_path)
 
 class VisionGrounder:
     def __init__(self, client=None):
@@ -33,7 +31,7 @@ class VisionGrounder:
                     {
                         "type": "image_url",
                         "image_url": {
-                            "url": f"data:image/png;base64,{base64_image}",
+                            "url": f"data:image/jpeg;base64,{base64_image}",
                             "detail": "low"  # Forces the model to use fewer tokens for the image
                         }
                     },
@@ -73,10 +71,14 @@ class VisionGrounder:
                 if not isinstance(box, list) or len(box) != 4:
                     raise ValueError("bounding_box must be a list of 4 coordinates")
                 
-                # Check normalized bounds
-                for coord in box:
-                    if not (0.0 <= coord <= 1.0):
-                        raise ValueError("Coordinates must be normalized between 0.0 and 1.0")
+                # Accept 0-1, 0-1000, or already-normalized values from the model.
+                coords = [float(c) for c in box]
+                peak = max(abs(c) for c in coords)
+                if peak > 1.5:
+                    coords = [c / 1000.0 for c in coords]
+                if any(c < 0.0 or c > 1.0 for c in coords):
+                    raise ValueError(f"Coordinates out of range: {box}")
+                data["bounding_box"] = coords
                         
             return data
             
@@ -91,7 +93,8 @@ class VisionGrounder:
         # Optimize for sub-500ms latency:
         # - temperature=0.0 removes sampling overhead
         # - max_tokens=50 caps the output generation, saving time
-        response = self.client.chat_completion(messages, temperature=0.0, max_tokens=50)
+        # Pretty-printed JSON from Qwen-VL does not fit in 50 tokens.
+        response = self.client.chat_completion(messages, temperature=0.0, max_tokens=256)
         
         if "choices" in response and len(response["choices"]) > 0:
             content = response["choices"][0]["message"]["content"]

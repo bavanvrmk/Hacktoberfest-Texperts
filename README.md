@@ -169,7 +169,7 @@ All of the following was built during **Hacktoberfest Hack Day — Coimbatore 20
 ## Open Source and AI Usage
 
 ### AI Model
-- **Qwen2.5-VL-3B-Instruct (Q4_K_M GGUF):** The vision-language model powering all UI grounding. Given a screenshot + text description, it returns exact bounding box coordinates. Served locally via `llama-server` on `localhost:8080`. Download from [HuggingFace](https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct-GGUF).
+- **Qwen3VL-4B-Instruct (Q4_K_M GGUF):** The vision-language model powering all UI grounding. Given a screenshot + text description, it returns exact bounding box coordinates. Served locally via `llama-server` on `localhost:8080`. Download from [HuggingFace](https://huggingface.co/ShuaiBai623/Qwen3VL-4B-Instruct-GGUF).
 
 ### Open Source Libraries
 
@@ -217,8 +217,8 @@ pip install customtkinter pyqt5 mss pyautogui opencv-python numpy fastapi uvicor
 ```
 
 Or manually download:
-- `Qwen2.5-VL-3B-Instruct-Q4_K_M.gguf` → place in `models/`
-- `mmproj-Qwen2.5-VL-3B-Instruct-f16.gguf` → place in `models/`
+- `Qwen3VL-4B-Instruct-Q4_K_M.gguf` → place in `models/`
+- `mmproj-Qwen3VL-4B-Instruct-F16.gguf` → place in `models/`
 
 ### 4. Configure Environment Variables
 
@@ -229,8 +229,8 @@ cp .env.example .env
 
 ```env
 LLAMA_SERVER_URL=http://localhost:8080
-MODEL_PATH=./models/Qwen2.5-VL-3B-Instruct-Q4_K_M.gguf
-MMPROJ_PATH=./models/mmproj-Qwen2.5-VL-3B-Instruct-f16.gguf
+MODEL_PATH=./models/Qwen3VL-4B-Instruct-Q4_K_M.gguf
+MMPROJ_PATH=./models/mmproj-Qwen3VL-4B-Instruct-F16.gguf
 ```
 
 ### 5. Start the Model Server
@@ -256,9 +256,14 @@ uvicorn src.architecture.roi_dashboard:app --host 127.0.0.1 --port 8000
 ### 7. Usage
 
 1. Press **`Ctrl + Space`** anywhere to open the Spotlight bar
-2. Type a natural language command: `"Click the Save button in the form"`
-3. Watch the AR glowing box highlight the target element on screen
-4. The system clicks it with a human-like trajectory and validates the state change
+2. Type a command. The app turns it into a workflow and runs each step:
+   - `Open Spotify` launches the installed Spotify app
+   - `Open README.md` finds that file on disk and opens it
+   - `Open Notepad and type hello` launches Notepad, then types the text
+   - `Close browser` closes Brave, Chrome, Edge, or Firefox
+   - `Click the Save button` still grounds that control on screen and clicks it
+3. Open **http://127.0.0.1:8000/workflows** to see saved workflows and run one again
+4. `rerun 1` in the Spotlight bar runs saved workflow 1
 5. A toast notification confirms completion with ROI savings displayed
 
 ---

@@ -101,14 +101,15 @@ class OSSandbox:
                 pass
             time.sleep(duration / steps)
 
-    def safe_move_and_click(self, x, y):
+    def safe_move_and_click(self, x, y, clicks=1):
         """
         Moves mouse with human-like trajectory and executes a safe click.
         """
-        print(f"[OS Sandbox] Moving smoothly to ({x}, {y}) and clicking...")
+        action = "double-clicking" if clicks == 2 else "clicking"
+        print(f"[OS Sandbox] Moving smoothly to ({x}, {y}) and {action}...")
         self.smooth_move_to(x, y, duration=0.2)
         try:
-            pyautogui.click()
+            pyautogui.click(clicks=clicks, interval=0.08)
         except Exception as e:
             print(f"[OS Sandbox] Click execution simulated/handled: {e}")
 

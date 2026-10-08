@@ -17,7 +17,7 @@ sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
 from core.event_bus import event_bus
 from core.orchestrator import orchestrator
-from ui.spotlight import SpotlightUI, start_hotkey_listener
+from ui.spotlight import SpotlightUI, hotkey_listener
 from ui.overlay import AROverlay
 from ui.toast import ToastManager
 from src.architecture.database_logger import init_db
@@ -52,18 +52,28 @@ def main():
     qt_app.setQuitOnLastWindowClosed(False)
 
     # 4. Initialize Toast Manager singleton
-    ToastManager.instance()
+    ToastManager()
 
-    # 5. Initialize AR Fullscreen Overlay
-    overlay = AROverlay()
-    overlay.show()
+    # 5. Initialize Spotlight UI (CustomTkinter) as the root Tk window
+    spotlight = SpotlightUI()
+    spotlight.show_spotlight()
 
-    # 6. Initialize Spotlight UI with direct Orchestrator Callback
-    spotlight = SpotlightUI(orchestrator_callback=orchestrator.run_pipeline)
-    spotlight.show()
+    # 6. Initialize AR Fullscreen Overlay (Tkinter Toplevel attached to spotlight root)
+    overlay = AROverlay(master=spotlight)
+
+    # 6.5 Pump Tkinter events using PyQt5 timer (single root update drives all toplevels)
+    def pump_tk():
+        try:
+            spotlight.update()
+        except Exception:
+            pass
+        
+    tk_timer = QTimer()
+    tk_timer.timeout.connect(pump_tk)
+    tk_timer.start(16)
 
     # 7. Start Global Hotkey Listener (Ctrl + Space)
-    hotkey_thread = threading.Thread(target=start_hotkey_listener, args=(spotlight.signals,), daemon=True)
+    hotkey_thread = threading.Thread(target=hotkey_listener, args=(spotlight,), daemon=True)
     hotkey_thread.start()
 
     print(">> [Hotkeys] Press [Ctrl + Space] anywhere on desktop to toggle Spotlight.")

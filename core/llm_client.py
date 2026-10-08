@@ -9,18 +9,35 @@ import base64
 import re
 import urllib.request
 import urllib.error
-import os
+from io import BytesIO
 
 class LLMClient:
     def __init__(self, base_url="http://localhost:8080/v1"):
         self.base_url = base_url
 
-    def encode_image_base64(self, image_path: str) -> str:
-        """Converts an image file to base64 JPEG/PNG string."""
-        with open(image_path, "rb") as image_file:
-            return base64.b64encode(image_file.read()).decode("utf-8")
+    def encode_image_base64(self, image_path: str, max_side: int = 1280) -> str:
+        """Resize a screenshot so a 4B vision model can finish inside the context window."""
+        try:
+            from PIL import Image
+            with Image.open(image_path) as img:
+                img = img.convert("RGB")
+                width, height = img.size
+                scale = min(1.0, float(max_side) / float(max(width, height)))
+                if scale < 1.0:
+                    img = img.resize(
+                        (max(1, int(width * scale)), max(1, int(height * scale))),
+                        Image.Resampling.LANCZOS,
+                    )
+                buffer = BytesIO()
+                img.save(buffer, format="JPEG", quality=85)
+                print(f"[LLM Client] Sending screenshot {img.size[0]}x{img.size[1]} (from {width}x{height}).")
+                return base64.b64encode(buffer.getvalue()).decode("utf-8")
+        except Exception as exc:
+            print(f"[LLM Client] Image resize skipped: {exc}")
+            with open(image_path, "rb") as image_file:
+                return base64.b64encode(image_file.read()).decode("utf-8")
 
-    def chat_completion(self, messages, temperature=0.0, max_tokens=128):
+    def chat_completion(self, messages, temperature=0.0, max_tokens=128, timeout=90):
         """
         Calls the /v1/chat/completions endpoint with low-latency tuning.
         """
@@ -43,8 +60,9 @@ class LLMClient:
             method='POST'
         )
         
+        print(f"[LLM Client] Waiting on local vision model (up to {timeout}s)...")
         try:
-            with urllib.request.urlopen(req, timeout=10) as response:
+            with urllib.request.urlopen(req, timeout=timeout) as response:
                 result = json.loads(response.read().decode('utf-8'))
                 return result
         except Exception as e:
@@ -69,7 +87,7 @@ class LLMClient:
                 "role": "user",
                 "content": [
                     {"type": "text", "text": prompt},
-                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_img}"}}
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_img}"}}
                 ]
             }
         ]

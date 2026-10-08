@@ -6,6 +6,7 @@ Features: animated border glow, step-by-step status labels, shimmer progress bar
 
 import customtkinter as ctk
 import keyboard
+import queue
 import threading
 import time
 import sys, os
@@ -76,7 +77,7 @@ class SpotlightUI(ctk.CTk):
             self, fg_color=BG_CARD,
             corner_radius=18, border_width=1, border_color=BLUE_GLOW
         )
-        self.card.place(x=6, y=6, relwidth=1, relheight=1, width=-12, height=-12)
+        self.card.pack(fill="both", expand=True, padx=6, pady=6)
 
         # ── Search row ────────────────────────────────────────────
         self.row = ctk.CTkFrame(self.card, fg_color="transparent")
@@ -131,6 +132,9 @@ class SpotlightUI(ctk.CTk):
         self.is_processing = False
         self._glow_angle = 0
         self._glow_job = None
+        self._toggle_pending = False
+        self._toggle_lock = threading.Lock()
+        self._ui_events = queue.Queue()
 
         # ── Bindings ──────────────────────────────────────────────
         self.bind("<Escape>", lambda e: self.hide_spotlight())
@@ -143,6 +147,7 @@ class SpotlightUI(ctk.CTk):
             event_bus.subscribe(EVENT_TASK_FAILED, self._on_failure)
 
         self._start_idle_glow()
+        self._poll_toggle()
 
     # ── Idle border glow animation ─────────────────────────────────
     def _start_idle_glow(self):
@@ -168,6 +173,13 @@ class SpotlightUI(ctk.CTk):
         self.card.configure(border_color=CYAN, border_width=2)
         self._update_step(STEPS[0])
 
+        # Hide the bar before the screenshot so the model sees the desktop.
+        self.hide_spotlight()
+        try:
+            self.update()
+        except Exception:
+            pass
+
         if HAS_EVENT_BUS:
             threading.Thread(
                 target=lambda: event_bus.emit(EVENT_TASK_START, {"command": query}),
@@ -179,23 +191,36 @@ class SpotlightUI(ctk.CTk):
     def _mock_run(self, query):
         for i, step in enumerate(STEPS[:-1]):
             time.sleep(0.9)
-            self.after(0, self._update_step, STEPS[i + 1])
+            self._ui_events.put(("step", STEPS[i + 1]))
         time.sleep(0.4)
-        self.after(0, self._finish_success, query, "$1.26")
+        self._ui_events.put(("success", {"summary": query, "roi": "$1.26"}))
 
-    # ── Event bus callbacks (thread-safe via .after) ───────────────
+    # ── Event bus callbacks (worker thread only enqueues) ──────────
     def _on_progress(self, data):
-        step_text = data.get("step", "")
-        self.after(0, self._update_step, step_text)
+        self._ui_events.put(("step", (data or {}).get("step", "")))
 
     def _on_success(self, data):
-        roi = data.get("roi_msg", "+$1.26")
-        summary = data.get("summary", "Task complete")
-        self.after(0, self._finish_success, summary, roi)
+        data = data or {}
+        self._ui_events.put(("success", {
+            "summary": data.get("summary", "Task complete"),
+            "roi": data.get("roi_msg", "+$1.26"),
+        }))
 
     def _on_failure(self, data):
-        err = data.get("error", "Unknown error")
-        self.after(0, self._finish_failure, err)
+        self._ui_events.put(("failure", (data or {}).get("error", "Unknown error")))
+
+    def _drain_ui_events(self):
+        while True:
+            try:
+                kind, data = self._ui_events.get_nowait()
+            except queue.Empty:
+                return
+            if kind == "step":
+                self._update_step(data)
+            elif kind == "success":
+                self._finish_success(data.get("summary", ""), data.get("roi", ""))
+            elif kind == "failure":
+                self._finish_failure(data)
 
     # ── UI update helpers ─────────────────────────────────────────
     def _update_step(self, text):
@@ -236,6 +261,26 @@ class SpotlightUI(ctk.CTk):
         self.after(0, lambda: _show_ctk_toast(self, f"❌ Failed: {error[:40]}", RED))
 
     # ── Visibility ────────────────────────────────────────────────
+    def request_toggle(self):
+        """Thread-safe: hotkey hooks only set a flag. The Tk thread applies it."""
+        with self._toggle_lock:
+            self._toggle_pending = True
+
+    def _poll_toggle(self):
+        try:
+            with self._toggle_lock:
+                pending = self._toggle_pending
+                self._toggle_pending = False
+            if pending:
+                self.toggle_spotlight()
+            self._drain_ui_events()
+        except Exception as exc:
+            print(f">> [Hotkeys] Toggle failed: {exc}")
+        try:
+            self.after(50, self._poll_toggle)
+        except Exception:
+            pass
+
     def toggle_spotlight(self):
         if self.is_visible:
             self.hide_spotlight()
@@ -243,14 +288,25 @@ class SpotlightUI(ctk.CTk):
             self.show_spotlight()
 
     def hide_spotlight(self):
+        # overrideredirect windows on Windows stay mapped unless it is cleared first.
+        try:
+            self.overrideredirect(False)
+        except Exception:
+            pass
         self.withdraw()
         self.is_visible = False
 
     def show_spotlight(self):
         self.deiconify()
+        self.overrideredirect(True)
+        self.attributes("-topmost", True)
+        self.attributes("-alpha", 0.97)
         self.lift()
-        self.focus_force()
-        self.search_entry.focus()
+        try:
+            self.focus_force()
+            self.search_entry.focus_set()
+        except Exception:
+            pass
         self.is_visible = True
 
 
@@ -303,8 +359,57 @@ def _show_ctk_toast(parent, message, color=GREEN):
 
 # ─── Entry point ─────────────────────────────────────────────────
 def hotkey_listener(app):
-    keyboard.add_hotkey("ctrl+space", app.toggle_spotlight)
+    """Global Ctrl+Space. Runs off the Tk thread and only sets a toggle flag."""
+    if _listen_win32_hotkey(app):
+        return
+    keyboard.add_hotkey("ctrl+space", app.request_toggle, suppress=False)
+    print(">> [Hotkeys] Ctrl+Space hooked via keyboard listener.")
     keyboard.wait()
+
+
+def _listen_win32_hotkey(app):
+    if not sys.platform.startswith("win"):
+        return False
+    import ctypes
+    from ctypes import wintypes
+
+    user32 = ctypes.WinDLL("user32", use_last_error=True)
+    MOD_CONTROL = 0x0002
+    MOD_NOREPEAT = 0x4000
+    VK_SPACE = 0x20
+    WM_HOTKEY = 0x0312
+    HOTKEY_ID = 1
+
+    if not user32.RegisterHotKey(None, HOTKEY_ID, MOD_CONTROL | MOD_NOREPEAT, VK_SPACE):
+        err = ctypes.get_last_error()
+        print(f">> [Hotkeys] RegisterHotKey failed (error {err}). Using keyboard hook.")
+        return False
+
+    print(">> [Hotkeys] Ctrl+Space registered.")
+
+    class POINT(ctypes.Structure):
+        _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
+
+    class MSG(ctypes.Structure):
+        _fields_ = [
+            ("hwnd", wintypes.HWND),
+            ("message", wintypes.UINT),
+            ("wParam", wintypes.WPARAM),
+            ("lParam", wintypes.LPARAM),
+            ("time", wintypes.DWORD),
+            ("pt", POINT),
+        ]
+
+    msg = MSG()
+    try:
+        while user32.GetMessageW(ctypes.byref(msg), None, 0, 0) != 0:
+            if msg.message == WM_HOTKEY and msg.wParam == HOTKEY_ID:
+                app.request_toggle()
+            user32.TranslateMessage(ctypes.byref(msg))
+            user32.DispatchMessageW(ctypes.byref(msg))
+    finally:
+        user32.UnregisterHotKey(None, HOTKEY_ID)
+    return True
 
 
 if __name__ == "__main__":

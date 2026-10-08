@@ -101,10 +101,19 @@ def main():
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
 
-    ToastManager.instance()
+    ToastManager()
 
     overlay = AROverlay()
-    overlay.show()
+
+    def pump_tk():
+        try:
+            overlay.update()
+        except Exception:
+            pass
+
+    tk_timer = QTimer()
+    tk_timer.timeout.connect(pump_tk)
+    tk_timer.start(16)
 
     # Launch demo in background worker thread
     demo_thread = threading.Thread(target=run_automated_showcase, daemon=True)

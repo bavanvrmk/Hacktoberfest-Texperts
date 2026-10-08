@@ -6,12 +6,12 @@ if (-not (Test-Path $ModelDir)) {
     New-Item -ItemType Directory -Path $ModelDir | Out-Null
 }
 
-# Note: These URLs are placeholders for the actual GGUF downloads
-$ModelUrl = "https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct-GGUF/resolve/main/qwen2.5-vl-3b-instruct-q4_k_m.gguf"
-$ProjUrl = "https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct-GGUF/resolve/main/mmproj-model-f16.gguf"
+# Note: These URLs point to the ShuaiBai623 repository
+$ModelUrl = "https://huggingface.co/ShuaiBai623/Qwen3VL-4B-Instruct-GGUF/resolve/main/Qwen3VL-4B-Instruct-Q4_K_M.gguf?download=true"
+$ProjUrl = "https://huggingface.co/ShuaiBai623/Qwen3VL-4B-Instruct-GGUF/resolve/main/mmproj-Qwen3VL-4B-Instruct-F16.gguf?download=true"
 
-$ModelFile = Join-Path $ModelDir "qwen2.5-vl-3b-instruct-q4_k_m.gguf"
-$ProjFile = Join-Path $ModelDir "mmproj-model-f16.gguf"
+$ModelFile = Join-Path $ModelDir "Qwen3VL-4B-Instruct-Q4_K_M.gguf"
+$ProjFile = Join-Path $ModelDir "mmproj-Qwen3VL-4B-Instruct-F16.gguf"
 
 Write-Host "Downloading model file..."
 # Invoke-WebRequest -Uri $ModelUrl -OutFile $ModelFile
