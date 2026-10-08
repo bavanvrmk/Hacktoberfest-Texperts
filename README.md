@@ -1,4 +1,3 @@
-<img width="1917" height="1151" alt="image" src="https://github.com/user-attachments/assets/5a0df869-773f-4757-9512-de123f191c0c" /># Shadow Automator
 
 > **A fully-local, privacy-first desktop automation tool powered by a vision-language model.**  
 > It *sees* your screen, *finds* UI elements by plain-text description, and *clicks* them — all on your own hardware, with zero cloud calls.
