@@ -1,7 +1,7 @@
 """
-Spotlight UI Module (Member 3 UI/UX Deliverable - PyQt5)
-Transparent, hotkey-activated ('Ctrl + Space') Spotlight search bar with real-time execution progress,
-event-bus orchestration, and integrated visual feedback.
+Spotlight UI Module (Member 3 UI/UX Deliverable - Phase 4 Visual Polish)
+Transparent, hotkey-activated ('Ctrl + Space') Spotlight HUD with real-time execution telemetry,
+quick workflow suggestions chips, and reactive event-bus integration.
 """
 
 import sys
@@ -14,11 +14,11 @@ except ImportError:
     pynput_keyboard = None
 
 from PyQt5.QtWidgets import (
-    QApplication, QWidget, QLineEdit, QProgressBar, QLabel, 
+    QApplication, QWidget, QLineEdit, QProgressBar, QLabel, QPushButton,
     QVBoxLayout, QHBoxLayout, QGraphicsDropShadowEffect
 )
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal, QObject
-from PyQt5.QtGui import QColor, QFont
+from PyQt5.QtGui import QColor, QFont, QCursor
 
 # Ensure root workspace is in sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -51,9 +51,9 @@ class SpotlightUI(QWidget):
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.SubWindow)
         self.setAttribute(Qt.WA_TranslucentBackground, True)
         
-        self.collapsed_height = 68
-        self.expanded_height = 118
-        self.window_width = 620
+        self.collapsed_height = 106
+        self.expanded_height = 148
+        self.window_width = 640
         
         self._init_ui()
         self._setup_signals()
@@ -68,58 +68,93 @@ class SpotlightUI(QWidget):
         self.card.setObjectName("SpotlightCard")
         self.card.setStyleSheet("""
             #SpotlightCard {
-                background-color: #0f172a;
+                background-color: #0b0f19;
                 border: 2px solid #38bdf8;
-                border-radius: 14px;
+                border-radius: 16px;
             }
         """)
         
         # Neon Drop Shadow
         shadow = QGraphicsDropShadowEffect(self)
-        shadow.setBlurRadius(24)
-        shadow.setColor(QColor(56, 189, 248, 120))
+        shadow.setBlurRadius(28)
+        shadow.setColor(QColor(56, 189, 248, 140))
         shadow.setOffset(0, 4)
         self.card.setGraphicsEffect(shadow)
         
         self.card_layout = QVBoxLayout(self.card)
-        self.card_layout.setContentsMargins(14, 10, 14, 12)
-        self.card_layout.setSpacing(8)
+        self.card_layout.setContentsMargins(16, 12, 16, 14)
+        self.card_layout.setSpacing(10)
         
         # Top Row: Icon + Input
         input_row = QHBoxLayout()
-        input_row.setSpacing(10)
+        input_row.setSpacing(12)
         
         self.icon_lbl = QLabel("⚡", self.card)
-        self.icon_lbl.setStyleSheet("font-size: 20px; color: #38bdf8;")
+        self.icon_lbl.setStyleSheet("font-size: 22px; color: #38bdf8;")
         input_row.addWidget(self.icon_lbl)
         
         self.search_entry = QLineEdit(self.card)
-        self.search_entry.setPlaceholderText("Enter automation command or natural language workflow...")
+        self.search_entry.setPlaceholderText("Enter automation workflow or describe UI element to click...")
         self.search_entry.setStyleSheet("""
             QLineEdit {
-                background-color: #1e293b;
+                background-color: #161f30;
                 color: #f8fafc;
                 font-size: 14px;
                 font-family: 'Segoe UI';
-                border: 1px solid #334155;
+                border: 1px solid #1e293b;
                 border-radius: 8px;
-                padding: 6px 12px;
+                padding: 7px 14px;
             }
             QLineEdit:focus {
                 border: 1px solid #38bdf8;
-                background-color: #1e293b;
+                background-color: #1a2438;
             }
         """)
         self.search_entry.returnPressed.connect(self.on_execute)
         input_row.addWidget(self.search_entry)
         
         self.card_layout.addLayout(input_row)
+
+        # Action Chips / Suggestion Pills
+        self.chips_row = QHBoxLayout()
+        self.chips_row.setSpacing(8)
+        
+        suggestions = [
+            ("📄 Invoice to CSV", "Extract invoice numbers and log to CSV"),
+            ("💾 Save Changes", "Click the Save Changes button"),
+            ("🔒 Blur PII & Submit", "Redact sensitive data and submit form")
+        ]
+        
+        for label, cmd in suggestions:
+            btn = QPushButton(label, self.card)
+            btn.setCursor(QCursor(Qt.PointingHandCursor))
+            btn.setStyleSheet("""
+                QPushButton {
+                    background-color: rgba(30, 41, 59, 0.7);
+                    color: #94a3b8;
+                    font-size: 11px;
+                    font-family: 'Segoe UI';
+                    border: 1px solid rgba(51, 65, 85, 0.6);
+                    border-radius: 6px;
+                    padding: 3px 8px;
+                }
+                QPushButton:hover {
+                    background-color: rgba(56, 189, 248, 0.15);
+                    color: #38bdf8;
+                    border: 1px solid #38bdf8;
+                }
+            """)
+            btn.clicked.connect(lambda checked, c=cmd: self._trigger_chip(c))
+            self.chips_row.addWidget(btn)
+            
+        self.chips_row.addStretch()
+        self.card_layout.addLayout(self.chips_row)
         
         # Bottom Progress Row (Hidden by default)
         self.progress_container = QWidget(self.card)
         prog_layout = QVBoxLayout(self.progress_container)
-        prog_layout.setContentsMargins(0, 0, 0, 0)
-        prog_layout.setSpacing(4)
+        prog_layout.setContentsMargins(0, 2, 0, 0)
+        prog_layout.setSpacing(5)
         
         self.status_lbl = QLabel("Ready", self.progress_container)
         self.status_lbl.setStyleSheet("color: #94a3b8; font-size: 11px; font-family: 'Segoe UI';")
@@ -132,12 +167,12 @@ class SpotlightUI(QWidget):
         self.progress_bar.setValue(0)
         self.progress_bar.setStyleSheet("""
             QProgressBar {
-                background-color: #334155;
+                background-color: #1e293b;
                 border: none;
                 border-radius: 3px;
             }
             QProgressBar::chunk {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #0284c7, stop:1 #38bdf8);
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #0284c7, stop:0.5 #38bdf8, stop:1 #10b981);
                 border-radius: 3px;
             }
         """)
@@ -150,6 +185,11 @@ class SpotlightUI(QWidget):
         
         self.resize(self.window_width, self.collapsed_height)
         self._reposition()
+
+    def _trigger_chip(self, cmd_text: str):
+        if not self.is_executing:
+            self.search_entry.setText(cmd_text)
+            self.on_execute()
 
     def _reposition(self):
         screen = QApplication.primaryScreen()
@@ -184,7 +224,7 @@ class SpotlightUI(QWidget):
         # Expand UI
         self.progress_container.show()
         self.resize(self.window_width, self.expanded_height)
-        self.status_lbl.setText(f"Initiating: '{query}'...")
+        self.status_lbl.setText(f"🚀 Initiating: '{query}'...")
         self.status_lbl.setStyleSheet("color: #60a5fa; font-size: 11px;")
         self.progress_bar.setValue(10)
         
@@ -202,19 +242,19 @@ class SpotlightUI(QWidget):
 
     def _on_self_healing(self, msg: str):
         self.status_lbl.setText(f"⚡ {msg}")
-        self.status_lbl.setStyleSheet("color: #fbbf24; font-size: 11px;")
+        self.status_lbl.setStyleSheet("color: #fbbf24; font-size: 11px; font-weight: bold;")
         show_toast("Self-Healing Active", msg, toast_type="healing", duration=3.0)
 
     def _on_task_success(self, summary: str, roi_msg: str):
-        self.status_lbl.setText(summary)
-        self.status_lbl.setStyleSheet("color: #34d399; font-size: 11px;")
+        self.status_lbl.setText(f"✓ {summary}")
+        self.status_lbl.setStyleSheet("color: #34d399; font-size: 11px; font-weight: bold;")
         self.progress_bar.setValue(100)
         show_toast("Task Executed", summary, toast_type="success", duration=4.0, badge=roi_msg)
         
         QTimer.singleShot(1800, self._collapse_and_hide)
 
     def _on_task_failed(self, err_msg: str):
-        self.status_lbl.setText(f"Error: {err_msg}")
+        self.status_lbl.setText(f"✕ Error: {err_msg}")
         self.status_lbl.setStyleSheet("color: #f87171; font-size: 11px;")
         show_toast("Task Failed", err_msg, toast_type="error", duration=4.0)
         
