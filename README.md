@@ -90,7 +90,7 @@ flowchart TD
 
 | Category | Technology |
 |---|---|
-| **AI Model** | `Qwen2.5-VL-3B-Instruct-Q4_K_M.gguf` via `llama-server` |
+| **AI Model** | `Qwen3-VL-4B-Instruct-Q4_K_M.gguf` via `llama-server` |
 | **Inference Server** | `llama.cpp` `llama-server` on `localhost:8080` with `-ngl 99` GPU offload |
 | **Screen Capture** | `mss` (DPI-aware, multi-monitor) |
 | **PII Redaction** | `OpenCV`, `re` (Regex), optional `pytesseract` OCR |
