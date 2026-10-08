@@ -4,15 +4,15 @@
 
 ## Team
 
-**Team Name:** [Team Name]
+**Team Name:** Texperts  
+**Team Code:** HTF 009
 
-
-| Member | Contribution   |
-| ------ | -------------- |
-| [Name] | [Contribution] |
-| [Name] | [Contribution] |
-| [Name] | [Contribution] |
-| [Name] | [Contribution] |
+| Member | Role | Institution | Email | Contribution |
+| ------ | ---- | ----------- | ----- | ------------ |
+| **Bavan Vijaya Raja M.K** | Leader | Amrita Vishwa Vidyapeetham | cb.en.u4cce25107@cb.students.amrita.edu | [Contribution] |
+| **Pranav Prasad** | Team Member | Amrita Vishwa Vidyapeetham | cb.en.u4cce25132@cb.students.amrita.edu | [Contribution] |
+| **Ithyaash S** | Team Member | Amrita Vishwa Vidyapeetham | cb.en.u4cce25023@cb.students.amrita.edu | [Contribution] |
+| **Bala Ragavan K** | Team Member | Amrita School of Engineering (Coimbatore) | cb.en.u4cce25011@cb.students.amrita.edu | [Contribution] |
 
 
 ## Problem Statement
@@ -75,10 +75,10 @@ If a category or technology is not implemented in the project, specify `N/A` ins
 
 ### Team Contributions
 
-- **[Member Name]:** [Contribution]
-- **[Member Name]:** [Contribution]
-- **[Member Name]:** [Contribution]
-- **[Member Name]:** [Contribution]
+- **Bavan Vijaya Raja M.K (Leader):** [Contribution]
+- **Pranav Prasad:** [Contribution]
+- **Ithyaash S:** [Contribution]
+- **Bala Ragavan K:** [Contribution]
 
 ## Working Application
 
@@ -160,7 +160,7 @@ cd [project-directory]
 ## Submission Checklist
 
 - [ ] Project title and description added
-- [ ] All team members listed
+- [x] All team members listed
 - [ ] Problem clearly explained
 - [ ] Reason for choosing the problem explained
 - [ ] Solution and key features documented
