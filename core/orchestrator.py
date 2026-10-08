@@ -17,6 +17,7 @@ from core.event_bus import (
     EVENT_TASK_START,
     EVENT_PROGRESS,
     EVENT_OVERLAY_DRAW,
+    EVENT_ACTION_EXECUTED,
     EVENT_TASK_SUCCESS,
     EVENT_TASK_FAILED,
     EVENT_SELF_HEALING
@@ -135,6 +136,9 @@ class Orchestrator:
                     "progress": 0.85
                 })
                 
+                # Emit action event to trigger AR click ripple radar ping
+                event_bus.emit(EVENT_ACTION_EXECUTED, {"x": cx, "y": cy})
+
                 execution_success = self.sandbox.execute_with_self_healing(
                     target_coords=(cx, cy),
                     click_action_fn=lambda: self.sandbox.safe_move_and_click(cx, cy),
