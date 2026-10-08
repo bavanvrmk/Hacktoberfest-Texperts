@@ -16,7 +16,7 @@
 | Member | Role | Contribution |
 |---|---|---|
 | **Bavan Vijaya Raja M.K** | GPU Lead (6GB VRAM) | llama-server setup, Vision-Grounding pipeline, inference optimization |
-| ****| Architecture & Compliance Lead | Repo structure, SQLite logger, ROI calculator, PII redaction, FastAPI dashboard |
+|**Bala Ragavan**| Architecture & Compliance Lead | Repo structure, SQLite logger, ROI calculator, PII redaction, FastAPI dashboard |
 | **Ithyaash** | UI/UX Lead | Spotlight bar, AR overlay, toast notifications, event bus UI wiring |
 | ** ** | OS Sandbox Lead | Screen grabber, mouse executor, self-healing loop, edge-case testing |
 
