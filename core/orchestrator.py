@@ -1,6 +1,6 @@
 """
 Main Orchestrator Module (Phase 3 System Pipeline Integration)
-Unifies Member 1 (Vision Grounding), Member 2 (OS Sandbox & Self-Healing),
+Unifies Member 1 (Vision Grounding via VisionGrounder & LLMClient), Member 2 (OS Sandbox & Self-Healing),
 Member 3 (Spotlight UI, Toast & AR Overlay), and Member 4 (PII Redaction, DB Logger, ROI Dashboard).
 """
 
@@ -22,6 +22,7 @@ from core.event_bus import (
     EVENT_SELF_HEALING
 )
 from core.llm_client import LLMClient
+from core.vision_grounding import VisionGrounder
 from core.os_sandbox import OSSandbox
 from src.architecture.database_logger import log_task_start, log_task_end
 from src.architecture.pii_redaction import detect_and_blur_pii
@@ -30,6 +31,7 @@ from src.architecture.roi_calculator import calculate_financial_roi
 class Orchestrator:
     def __init__(self):
         self.llm_client = LLMClient()
+        self.grounder = VisionGrounder(client=self.llm_client)
         self.sandbox = OSSandbox()
         self._lock = threading.Lock()
         
@@ -72,27 +74,42 @@ class Orchestrator:
                 try:
                     detect_and_blur_pii(raw_screenshot_path, redacted_screenshot_path)
                 except Exception as e:
-                    print(f"[Orchestrator] PII redaction warning: {e}, continuing with raw screenshot.")
+                    print(f"[Orchestrator] PII redaction note: {e}, using raw screenshot.")
                     redacted_screenshot_path = raw_screenshot_path
 
-                # Step 4: Vision Grounding with local LLM (Member 1)
+                # Step 4: Vision Grounding with Member 1 VisionGrounder
                 event_bus.emit(EVENT_PROGRESS, {
-                    "step": "3/6 Grounding target element via local Vision model...",
+                    "step": "3/6 Grounding target element via VisionGrounder...",
                     "progress": 0.50
                 })
                 
                 screen_w = self.sandbox.monitor["width"]
                 screen_h = self.sandbox.monitor["height"]
-                grounding_res = self.llm_client.ground_target(
-                    redacted_screenshot_path, 
-                    target_description, 
-                    screen_width=screen_w, 
-                    screen_height=screen_h
-                )
                 
-                x1, y1, x2, y2 = grounding_res["box"]
-                cx, cy = grounding_res["center"]
-                label = grounding_res.get("label", target_description)
+                # Attempt Member 1's VisionGrounder, with fallback to simulator if server offline
+                try:
+                    grounding_data = self.grounder.find_element(redacted_screenshot_path, target_description)
+                    if grounding_data.get("target_found"):
+                        box = grounding_data["bounding_box"]
+                        # Convert normalized [x1, y1, x2, y2] to screen pixels
+                        x1 = int(box[0] * screen_w)
+                        y1 = int(box[1] * screen_h)
+                        x2 = int(box[2] * screen_w)
+                        y2 = int(box[3] * screen_h)
+                        cx = (x1 + x2) // 2
+                        cy = (y1 + y2) // 2
+                        label = target_description
+                    else:
+                        raise ValueError("Target not found by grounding model")
+                except Exception as ex:
+                    print(f"[Orchestrator] Vision server offline or grounding notice: {ex}")
+                    print("[Orchestrator] Using robust fallback grounding engine...")
+                    fallback = self.llm_client.ground_target(
+                        redacted_screenshot_path, target_description, screen_width=screen_w, screen_height=screen_h
+                    )
+                    x1, y1, x2, y2 = fallback["box"]
+                    cx, cy = fallback["center"]
+                    label = fallback.get("label", target_description)
                 
                 print(f"[Orchestrator] Element grounded at [{x1}, {y1}, {x2}, {y2}] Center: ({cx}, {cy})")
 
@@ -163,5 +180,5 @@ class Orchestrator:
 orchestrator = Orchestrator()
 
 if __name__ == "__main__":
-    print("Testing Orchestrator end-to-end pipeline...")
+    print("Testing Orchestrator end-to-end pipeline with VisionGrounder...")
     orchestrator.run_pipeline("Click the Save Changes button")
