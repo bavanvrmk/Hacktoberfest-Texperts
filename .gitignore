@@ -17,3 +17,8 @@ mock_screen_redacted.jpg
 logs/
 *.db
 *.sqlite3
+
+# Models
+Models/
+models/
+*.gguf
