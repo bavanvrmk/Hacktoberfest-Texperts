@@ -27,228 +27,117 @@ template_dir = os.path.join(os.path.dirname(__file__), "templates")
 os.makedirs(template_dir, exist_ok=True)
 template_file = os.path.join(template_dir, "dashboard.html")
 
-# Write modern, responsive Dark Theme Dashboard UI
-with open(template_file, "w", encoding="utf-8") as f:
-    f.write("""
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shadow Automator — Live ROI & Metrics</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg: #090d16;
-            --surface: #111827;
-            --surface-hover: #1f2937;
-            --border: #1e293b;
-            --accent-blue: #38bdf8;
-            --accent-emerald: #10b981;
-            --accent-amber: #f59e0b;
-            --text-primary: #f8fafc;
-            --text-muted: #94a3b8;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; }
-        body { background-color: var(--bg); color: var(--text-primary); padding: 32px; min-height: 100vh; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
-        .logo-group { display: flex; align-items: center; gap: 12px; }
-        .logo-badge { background: linear-gradient(135deg, #0284c7, #38bdf8); width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 0 20px rgba(56,189,248,0.3); }
-        h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
-        .sub { font-size: 13px; color: var(--text-muted); }
-        .live-pill { display: flex; align-items: center; gap: 8px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 6px 14px; border-radius: 9999px; font-size: 12px; font-weight: 600; color: var(--accent-emerald); }
-        .live-dot { width: 8px; height: 8px; border-radius: 50%; background-color: var(--accent-emerald); box-shadow: 0 0 10px var(--accent-emerald); animation: pulse 1.8s infinite; }
-        
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-
-        .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; margin-bottom: 28px; }
-        .metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px; display: flex; flex-direction: column; gap: 8px; position: relative; overflow: hidden; }
-        .metric-card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, transparent, var(--accent-blue), transparent); opacity: 0.4; }
-        .metric-label { font-size: 13px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
-        .metric-val { font-size: 32px; font-weight: 700; color: #fff; }
-        .metric-footer { font-size: 12px; color: var(--text-muted); }
-
-        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; }
-        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
-        .card-title { font-size: 18px; font-weight: 600; }
-
-        table { width: 100%; border-collapse: collapse; text-align: left; }
-        th { padding: 12px 16px; font-size: 12px; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); font-weight: 600; }
-        td { padding: 14px 16px; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.03); color: #cbd5e1; }
-        tr:hover td { background-color: var(--surface-hover); }
-        .mono { font-family: 'JetBrains Mono', monospace; font-size: 13px; }
-        .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
-        .badge-success { background: rgba(16, 185, 129, 0.15); color: #34d399; }
-        .badge-running { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
-        .badge-failed { background: rgba(239, 68, 68, 0.15); color: #f87171; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <header>
-            <div class="logo-group">
-                <div class="logo-badge">⚡</div>
-                <div>
-                    <h1>Shadow Automator — Live ROI Engine</h1>
-                    <p class="sub">Real-Time Cost Savings & Autonomous Task Analytics</p>
-                </div>
-            </div>
-            <div class="live-pill">
-                <div class="live-dot"></div> Live Telemetry Active
-            </div>
-            <a href="/workflows" style="color:#38bdf8;text-decoration:none;font-weight:600;">Workflows</a>
-        </header>
-
-        <div class="metrics-grid">
-            <div class="metric-card">
-                <span class="metric-label">Cloud Vision API Costs Avoided</span>
-                <span class="metric-val" id="val-cloud-saved">${{ roi.cloud_savings_usd }}</span>
-                <span class="metric-footer">Compared to Cloud GPT-4V APIs</span>
-            </div>
-            <div class="metric-card">
-                <span class="metric-label">Human Labor Hours Saved</span>
-                <span class="metric-val" id="val-hours-saved">{{ roi.hours_saved }} hrs</span>
-                <span class="metric-footer">At ~3.0 min/manual workflow</span>
-            </div>
-            <div class="metric-card">
-                <span class="metric-label">Estimated Labor Savings</span>
-                <span class="metric-val" id="val-labor-saved">${{ roi.labor_savings_usd }}</span>
-                <span class="metric-footer">Based on $25.00/hr baseline</span>
-            </div>
-            <div class="metric-card" style="border-color: rgba(16, 185, 129, 0.4);">
-                <span class="metric-label" style="color: var(--accent-emerald);">Total Financial ROI</span>
-                <span class="metric-val" style="color: var(--accent-emerald);" id="val-total-roi">${{ roi.total_savings_usd }}</span>
-                <span class="metric-footer">Net Value Created Locally</span>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title">Real-Time Automation Logs</div>
-                <span class="sub" id="log-count">Total Executions: {{ logs|length }}</span>
-            </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Workflow Task</th>
-                        <th>Start Time</th>
-                        <th>Duration</th>
-                        <th>Status</th>
-                        <th>Notes</th>
-                    </tr>
-                </thead>
-                <tbody id="logs-tbody">
-                    {% for row in logs %}
-                    <tr>
-                        <td class="mono">#{{ row[0] }}</td>
-                        <td><strong>{{ row[1] }}</strong></td>
-                        <td class="mono">{{ row[2] }}</td>
-                        <td class="mono">{{ row[4] if row[4] else '—' }} ms</td>
-                        <td>
-                            <span class="badge {% if row[5] == 'completed' %}badge-success{% elif row[5] == 'running' %}badge-running{% else %}badge-failed{% endif %}">
-                                {{ row[5] }}
-                            </span>
-                        </td>
-                        <td style="color: var(--text-muted);">{{ row[7] if row[7] else '' }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <script>
-        // Real-Time auto polling every 3 seconds
-        async function fetchLiveMetrics() {
-            try {
-                const res = await fetch('/api/stats');
-                const data = await res.json();
-                
-                document.getElementById('val-cloud-saved').innerText = '$' + data.roi.cloud_savings_usd.toFixed(2);
-                document.getElementById('val-hours-saved').innerText = data.roi.hours_saved.toFixed(2) + ' hrs';
-                document.getElementById('val-labor-saved').innerText = '$' + data.roi.labor_savings_usd.toFixed(2);
-                document.getElementById('val-total-roi').innerText = '$' + data.roi.total_savings_usd.toFixed(2);
-                document.getElementById('log-count').innerText = 'Total Executions: ' + data.logs.length;
-
-                const tbody = document.getElementById('logs-tbody');
-                tbody.innerHTML = data.logs.map(row => `
-                    <tr>
-                        <td class="mono">#${row[0]}</td>
-                        <td><strong>${row[1]}</strong></td>
-                        <td class="mono">${row[2]}</td>
-                        <td class="mono">${row[4] ? row[4] + ' ms' : '—'}</td>
-                        <td>
-                            <span class="badge ${row[5] === 'completed' ? 'badge-success' : (row[5] === 'running' ? 'badge-running' : 'badge-failed')}">
-                                ${row[5]}
-                            </span>
-                        </td>
-                        <td style="color: #94a3b8;">${row[7] || ''}</td>
-                    </tr>
-                `).join('');
-            } catch (err) {
-                console.error("Live fetch failed", err);
-            }
-        }
-        setInterval(fetchLiveMetrics, 3000);
-    </script>
-</body>
-</html>
-""")
-
+# Configure Jinja2 templates directory
 templates = Jinja2Templates(directory=template_dir)
 
 def get_stats_data():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT * FROM execution_logs ORDER BY id DESC LIMIT 50")
+        cursor.execute("SELECT * FROM execution_logs ORDER BY id DESC LIMIT 100")
         logs = cursor.fetchall()
         cursor.execute("SELECT COUNT(*) FROM execution_logs WHERE status='completed'")
         num_tasks = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM execution_logs WHERE status='failed'")
+        failed_tasks = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM execution_logs WHERE status='running'")
+        running_tasks = cursor.fetchone()[0]
+        cursor.execute("SELECT AVG(execution_time_ms) FROM execution_logs WHERE execution_time_ms IS NOT NULL AND status='completed'")
+        avg_time = cursor.fetchone()[0] or 0
     except Exception:
         logs = []
         num_tasks = 0
+        failed_tasks = 0
+        running_tasks = 0
+        avg_time = 0
     finally:
         conn.close()
 
     roi_data = calculate_financial_roi(num_requests=num_tasks, num_automated_tasks=num_tasks)
-    return logs, roi_data
+    stats_summary = {
+        "total_executions": len(logs),
+        "completed_count": num_tasks,
+        "failed_count": failed_tasks,
+        "running_count": running_tasks,
+        "avg_duration_ms": round(avg_time, 1)
+    }
+    return logs, roi_data, stats_summary
 
 @app.get("/", response_class=HTMLResponse)
 async def read_dashboard(request: Request):
-    logs, roi_data = get_stats_data()
+    logs, roi_data, stats_summary = get_stats_data()
     return templates.TemplateResponse(
         request=request,
         name="dashboard.html",
         context={
             "request": request, 
             "logs": logs,
-            "roi": roi_data
+            "roi": roi_data,
+            "stats": stats_summary
         }
     )
 
 @app.get("/api/stats", response_class=JSONResponse)
 async def api_stats():
-    logs, roi_data = get_stats_data()
+    logs, roi_data, stats_summary = get_stats_data()
     return {
         "logs": logs,
-        "roi": roi_data
+        "roi": roi_data,
+        "stats": stats_summary
     }
 
-@app.get("/workflows")
-async def workflows_page():
-    from fastapi.responses import FileResponse
-    page = os.path.join(template_dir, "workflows.html")
-    return FileResponse(page)
+@app.get("/api/system", response_class=JSONResponse)
+async def api_system():
+    return {
+        "model_name": "Qwen2.5-VL-3B-Instruct (Q4_K_M)",
+        "llama_server": "http://127.0.0.1:8080",
+        "gpu_offload": "-ngl 99 (6GB VRAM Consumer GPU)",
+        "context_window": "4096 tokens",
+        "redaction_engine": "OpenCV Regex Masking (100% Offline)",
+        "privacy_level": "Strict Zero Egress (Air-Gapped Ready)",
+        "platform": "Windows 10/11 (DPI-Aware)"
+    }
+
+@app.get("/api/logs/{log_id}", response_class=JSONResponse)
+async def api_get_log(log_id: int):
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    row = cursor.execute("SELECT * FROM execution_logs WHERE id = ?", (log_id,)).fetchone()
+    conn.close()
+    if not row:
+        return JSONResponse({"error": "Log not found"}, status_code=404)
+    return dict(row)
+
+@app.get("/workflows", response_class=HTMLResponse)
+async def workflows_page(request: Request):
+    from core.workflow_manager import WorkflowManager
+    workflows = WorkflowManager().list_workflows()
+    return templates.TemplateResponse(
+        request=request,
+        name="workflows.html",
+        context={
+            "request": request,
+            "workflows": workflows
+        }
+    )
 
 @app.get("/api/workflows")
 async def api_workflows():
     from core.workflow_manager import WorkflowManager
     return WorkflowManager().list_workflows()
+
+@app.post("/api/workflows")
+async def api_create_workflow(payload: dict):
+    from core.workflow_manager import WorkflowManager
+    command = payload.get("command", "").strip()
+    if not command:
+        return JSONResponse({"error": "Command string cannot be empty"}, status_code=400)
+    try:
+        wf_id, steps = WorkflowManager().save(command)
+        return {"ok": True, "id": wf_id, "steps": steps}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
 
 @app.post("/api/workflows/{workflow_id}/run")
 async def api_run_workflow(workflow_id: int):
@@ -259,6 +148,94 @@ async def api_run_workflow(workflow_id: int):
         return JSONResponse({"error": "workflow not found"}, status_code=404)
     threading.Thread(target=orchestrator.run_pipeline, args=(workflow["command"],), daemon=True).start()
     return {"ok": True, "id": workflow_id}
+
+@app.post("/api/spotlight/run")
+async def api_spotlight_run(payload: dict):
+    """Executes a command dispatched from Desktop or Web Spotlight Command Palette."""
+    command = payload.get("command", "").strip()
+    if not command:
+        return JSONResponse({"error": "Command string cannot be empty"}, status_code=400)
+    from core.orchestrator import orchestrator
+    threading.Thread(target=orchestrator.run_pipeline, args=(command,), daemon=True).start()
+    return {"ok": True, "command": command}
+
+@app.get("/api/spotlight/suggestions")
+async def api_spotlight_suggestions():
+    """Returns curated presets and suggestions for Spotlight command palette."""
+    return [
+        {
+            "id": "whatsapp_msg",
+            "category": "APPS",
+            "title": "WhatsApp: Send Message to Contact",
+            "command": "open whatsapp and search for pranav cceb and send hi",
+            "subtitle": "Search contact 'pranav cceb' & dispatch message via WhatsApp",
+            "badge": "WhatsApp"
+        },
+        {
+            "id": "screen_summary",
+            "category": "VISION",
+            "title": "Read & Summarize Screen Contents",
+            "command": "read contents on the screen and summarize",
+            "subtitle": "Local Qwen2.5-VL Vision reads active windows & summarizes",
+            "badge": "Vision AI"
+        },
+        {
+            "id": "open_twitter",
+            "category": "APPS",
+            "title": "Open Twitter / X in Browser",
+            "command": "Open Twitter",
+            "subtitle": "Launches https://x.com or native desktop client",
+            "badge": "Web / App"
+        },
+        {
+            "id": "open_chatgpt",
+            "category": "APPS",
+            "title": "Open ChatGPT Web Assistant",
+            "command": "Open ChatGPT",
+            "subtitle": "Launches https://chatgpt.com in default browser",
+            "badge": "Web / AI"
+        },
+        {
+            "id": "email_hackathon_demo",
+            "category": "EMAIL",
+            "title": "Send Email via Outlook to Evaluator",
+            "command": "Send an email using outlook to jp_vedaj@cb.amrita.edu about how good my hackathon demo was",
+            "subtitle": "Recipient: jp_vedaj@cb.amrita.edu · Topic: Hackathon Demo Feedback",
+            "badge": "Outlook COM"
+        },
+        {
+            "id": "roi_dashboard",
+            "category": "TELEMETRY",
+            "title": "Launch Live ROI & Financial Engine",
+            "command": "Open Chrome and navigate to http://127.0.0.1:8000",
+            "subtitle": "Real-time Telemetry, PII Audit Logs & Cost Metrics",
+            "badge": "Browser"
+        },
+        {
+            "id": "notepad_notes",
+            "category": "APPS",
+            "title": "Draft Presentation Notes in Notepad",
+            "command": "Launch Notepad and type hackathon notes for jury evaluation",
+            "subtitle": "Process Spawning & Sandboxed Keystroke Injection",
+            "badge": "Windows App"
+        },
+        {
+            "id": "vision_click",
+            "category": "VISION",
+            "title": "Autonomous Vision Grounding Click",
+            "command": "Click the Save Changes button",
+            "subtitle": "Local Qwen2.5-VL Object Detection & AR Projection",
+            "badge": "Vision AI"
+        },
+        {
+            "id": "taskmgr",
+            "category": "SYSTEM",
+            "title": "Inspect Desktop Performance & VRAM",
+            "command": "Launch Task Manager",
+            "subtitle": "Win32 Sandbox Process Monitor",
+            "badge": "System"
+        }
+    ]
 
 if __name__ == "__main__":
     import uvicorn

@@ -68,6 +68,16 @@ class LLMClient:
         except Exception as e:
             raise RuntimeError(f"Failed to communicate with LLM server: {e}")
 
+    def complete(self, prompt: str, max_tokens: int = 512, temperature: float = 0.0) -> str:
+        """Convenience method for text-only model completion."""
+        messages = [{"role": "user", "content": prompt}]
+        try:
+            res = self.chat_completion(messages, temperature=temperature, max_tokens=max_tokens)
+            return res["choices"][0]["message"]["content"].strip()
+        except Exception as exc:
+            print(f"[LLM Client] Text completion failed: {exc}")
+            return ""
+
     def ground_target(self, image_path: str, target_description: str, screen_width=1920, screen_height=1080) -> dict:
         """
         Vision-Grounding Pipeline:
@@ -156,6 +166,19 @@ class LLMClient:
             "confidence": 0.88,
             "label": target_description
         }
+
+    def generate_text(self, instruction: str, max_tokens=900) -> str:
+        """Ask the local model to write text that will be typed into the focused app."""
+        messages = [{
+            "role": "user",
+            "content": (
+                "Write the requested text. Return only the text itself, with no title, "
+                "quotes, or explanation.\n\n"
+                f"{instruction}"
+            ),
+        }]
+        response = self.chat_completion(messages, temperature=0.7, max_tokens=max_tokens, timeout=90)
+        return response["choices"][0]["message"]["content"].strip()
 
     def health_check(self):
         """Checks if the /v1/models endpoint is reachable."""

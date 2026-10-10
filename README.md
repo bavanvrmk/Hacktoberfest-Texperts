@@ -44,13 +44,18 @@ Millions of everyday office tasks happen inside desktop apps and internal tools 
 
 ### Key Features
 
-- **Describe-and-find grounding** — clicks located from text descriptions, no stored pixel coordinates
-- **Offline PII Redaction** — Regex + OpenCV blurs sensitive data before any image touches the model
-- **Self-Healing Loop** — MSE-based visual state validation with automatic re-grounding on failure
-- **AR Bounding Box Overlay** — glowing, animated, corner-bracketed boxes projected over real UI
-- **Live ROI Dashboard** — FastAPI web dashboard tracking cloud costs and human hours saved
-- **Fully Local** — zero outbound network calls during automation; all inference on-device
-
+- **Apple-Grade Floating Capsule & Suggestion Chips UI** — macOS-inspired capsule search bar with action adder (`+`), "🧠 Think" deep reasoning toggle, voice dictation icon, and pulsating electric orange dispatch beacon (`⚡`). Includes Google Assistant & Siri-style rounded suggestion chips (`[ 💬 WhatsApp ]`, `[ 👁 Summarize ]`, `[ 🐦 Twitter ]`, `[ 🤖 ChatGPT ]`, `[ 📧 Send Email ]`, `[ 📝 Notes ]`, `[ 🌐 Chrome ]`) with zero rectangular edge artifacts and a high-frequency animated Orange Glowbar.
+- **Autonomous Customer Intent Workflow Compiler** — The local model interprets conversational natural language rather than taking literal words or regex-splitting on "and". Deconstructs freeform human goals into ordered, executable JSON pipelines (`launch_app`, `open_url`, `click`, `type`, `hotkey`, `wait`, `scroll`, `send_email`, `summarize_screen`).
+- **Native WhatsApp & Messaging Automation** — Fully automates messaging flows across desktop and web (e.g. *"open whatsapp and search for pranav cceb and send hi"* ➔ launches WhatsApp, focuses search, types contact, opens chat, and types/sends message).
+- **On-Screen Content Reading & Summarization** — Autonomous visual screen comprehension (`summarize_screen`). Qwen2.5-VL reads all visible documents, code, windows, or chats on screen and generates structured, privacy-preserving bullet-point summaries.
+- **AI & Semantic App Name Resolution** — Local Qwen2.5-VL and fuzzy `difflib` resolution for desktop apps, resolving typos and conversational requests (e.g. *"crohme"* ➔ *Google Chrome*, *"vscod"* ➔ *Visual Studio Code*, *"whatsapp"* ➔ *WhatsApp Desktop*) with seamless browser fallbacks for web services.
+- **Multi-Screenshot Visual Thinking Loop** — Tracks visual state transitions across consecutive steps, computing mean squared error (MSE) screen deltas and streaming multi-screenshot visual reasoning into a live telemetry card so the agent adapts dynamically to what appears on screen.
+- **Native Microsoft Outlook Automation** — Dispatches emails directly through local Outlook (COM) via natural language commands (e.g., *"Send an email using outlook to jp_vedaj@cb.amrita.edu about how good my hackathon demo was"*).
+- **Offline PII Redaction** — Regex + OpenCV blurs sensitive data before any screenshot touches the vision model.
+- **Self-Healing Loop** — MSE-based visual state validation with automatic re-grounding and adaptive recovery.
+- **AR Bounding Box Overlay** — Glowing, animated, corner-bracketed boxes projected over real UI in high-visibility electric orange.
+- **Live ROI Dashboard & Web Spotlight (`Ctrl+K`)** — FastAPI telemetry dashboard tracking cloud costs and human hours saved with full command palette integration.
+- **Fully Local** — Zero outbound network calls during automation; all inference on-device.
 ---
 
 ## Innovation and Differentiation
@@ -109,6 +114,9 @@ shadow-automator/
 │   ├── orchestrator.py       # 7-step automation pipeline orchestrator
 │   ├── llm_client.py         # LLM HTTP client for llama-server
 │   ├── vision_grounding.py   # Vision grounding pipeline (POST /v1/chat/completions)
+│   ├── email_sender.py       # Outlook COM automation & NLP email intent engine
+│   ├── command_planner.py    # NLP action planner & decomposition
+│   ├── workflow_manager.py   # Persistent routine state manager
 │   ├── os_sandbox.py         # Screen capture + mouse safety bounds
 │   ├── mouse_executor.py     # Human-like mouse smoothing + click/type loops
 │   └── self_healing.py       # MSE visual diff + automated re-grounding
@@ -118,7 +126,7 @@ shadow-automator/
 │   ├── pii_redaction.py      # Offline PII blurring pipeline
 │   └── roi_dashboard.py      # FastAPI + HTML/JS ROI web dashboard
 ├── ui/
-│   ├── spotlight.py          # Ctrl+Space command bar (CustomTkinter)
+│   ├── spotlight.py          # Raycast/Linear-tier command palette (CustomTkinter)
 │   ├── overlay.py            # AR transparent bounding box overlay (Tkinter)
 │   └── toast.py              # HUD toast notifications (PyQt5)
 ├── scripts/
@@ -157,11 +165,13 @@ All of the following was built during **Hacktoberfest Hack Day — Coimbatore 20
 - Wired Spotlight UI to Orchestrator via Event Bus (step labels, progress bar, toast popups)
 - Live ROI calculator hooked into task completion events with analytics state manager
 
-### Phase 4 — Testing & Polish (Hours 10–12)
+### Phase 4 — Testing, Polish & Intelligence Expansion (Hours 10–12)
 - End-to-end stress testing of `llama-server` under continuous automation loops
-- Edge-case testing across Excel, browser, PDF reader for accurate click targeting
-- Visual polish: glow animations, PyQt5 toast notifications with timer bars and stacking
-- Comprehensive README, architecture diagrams, commit history audit, submission preparation
+- Implemented **Apple Capsule Design System** with frameless floating card, "🧠 Think" toggle, and suggestion chips
+- Added **AI & Fuzzy App Resolution** and automatic web app routing (Twitter, ChatGPT, Chrome, VS Code)
+- Implemented **Multi-Screenshot Visual Thinking Reasoning Loop** with real-time MSE screen delta telemetry
+- Added **Customer Intent Workflow Compiler** allowing the model to program, deconstruct, and execute arbitrary multi-step goals
+- Comprehensive README, architecture diagrams, commit history audit, submission readiness verification
 
 ---
 

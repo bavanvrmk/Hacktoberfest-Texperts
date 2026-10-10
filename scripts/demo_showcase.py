@@ -38,7 +38,7 @@ def run_automated_showcase():
     print(">> Step 1: Grounding Invoice Input Field...")
     event_bus.emit(EVENT_OVERLAY_DRAW, {
         "x1": 340, "y1": 240, "x2": 620, "y2": 290,
-        "duration": 2.5, "color": "#38bdf8", "label": "Invoice Number Field"
+        "duration": 2.5, "color": "#f97316", "label": "Invoice Number Field"
     })
     
     time.sleep(1.0)

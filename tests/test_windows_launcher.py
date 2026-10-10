@@ -36,6 +36,23 @@ class TestCommandRouting(unittest.TestCase):
             plan_command("Click the Save button"),
             [{"action": "click", "target": "Save button"}],
         )
+        self.assertEqual(plan_command("vscoed"), [{"action": "launch_app", "target": "Visual Studio Code"}])
+        self.assertEqual(plan_command("close the youtube tab")[0]["action"], "click")
+        self.assertEqual(
+            plan_command("open notepad and write 500 words"),
+            [
+                {"action": "launch_app", "target": "notepad"},
+                {"action": "generate", "target": "500 words"},
+            ],
+        )
+        self.assertEqual(
+            plan_command("create a new text file and writa a 500 word essay on rome")[0],
+            {"action": "launch_app", "target": "Notepad"},
+        )
+        self.assertEqual(
+            plan_command("create a new text file and writa a 500 word essay on rome")[1]["action"],
+            "generate",
+        )
 
     def test_choose_app_prefers_exact_name(self):
         apps = [("Spotify", "id.spotify"), ("Spotify Free", "id.free"), ("Notepad", "id.notepad")]

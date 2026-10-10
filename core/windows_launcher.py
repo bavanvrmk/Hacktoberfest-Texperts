@@ -17,6 +17,9 @@ _OPEN_VERB = re.compile(
     re.IGNORECASE,
 )
 _FILE_TOKEN = re.compile(r"([A-Za-z0-9][\w .\-]*\.[A-Za-z0-9]{1,8})$")
+import difflib
+import webbrowser
+
 _FILE_WORD = re.compile(r"\b(file|document|spreadsheet|pdf)\b", re.IGNORECASE)
 _EXPLORER_APP = re.compile(r"\b(file\s+explorer|windows\s+explorer)\b", re.IGNORECASE)
 
@@ -32,6 +35,69 @@ _BUILTIN_APPS = {
     "paint": "mspaint.exe",
     "snipping tool": "snippingtool.exe",
     "task manager": "taskmgr.exe",
+    "taskmgr": "taskmgr.exe",
+}
+
+_APP_ALIASES = {
+    "word": "Microsoft Word",
+    "winword": "Microsoft Word",
+    "excel": "Microsoft Excel",
+    "spreadsheet": "Microsoft Excel",
+    "powerpoint": "Microsoft PowerPoint",
+    "ppt": "Microsoft PowerPoint",
+    "slides": "Microsoft PowerPoint",
+    "outlook": "Outlook",
+    "mail": "Outlook",
+    "email": "Outlook",
+    "code": "Visual Studio Code",
+    "vscod": "Visual Studio Code",
+    "vscode": "Visual Studio Code",
+    "vs code": "Visual Studio Code",
+    "visual studio code": "Visual Studio Code",
+    "chrome": "Google Chrome",
+    "google chrome": "Google Chrome",
+    "edge": "Microsoft Edge",
+    "browser": "Google Chrome",
+    "web browser": "Google Chrome",
+    "firefox": "Firefox",
+    "brave": "Brave",
+    "spotify": "Spotify",
+    "music": "Spotify",
+    "discord": "Discord",
+    "slack": "Slack",
+    "teams": "Microsoft Teams",
+    "terminal": "Windows Terminal",
+    "terminal prompt": "Windows Terminal",
+    "cmd": "cmd.exe",
+    "powershell": "powershell.exe",
+    "calc": "calc.exe",
+    "calculator": "calc.exe",
+    "notes": "notepad.exe",
+    "notepad": "notepad.exe",
+    "paint": "mspaint.exe",
+    "task manager": "taskmgr.exe",
+    "taskmgr": "taskmgr.exe",
+    "settings": "ms-settings:",
+    "twitter": "Twitter",
+    "x": "Twitter",
+    "chatgpt": "ChatGPT",
+    "whatsapp": "WhatsApp",
+    "whats app": "WhatsApp",
+    "watsapp": "WhatsApp",
+}
+
+_WEB_APP_URLS = {
+    "twitter": "https://x.com",
+    "x": "https://x.com",
+    "chatgpt": "https://chatgpt.com",
+    "github": "https://github.com",
+    "youtube": "https://youtube.com",
+    "reddit": "https://reddit.com",
+    "gmail": "https://mail.google.com",
+    "google": "https://google.com",
+    "docs": "https://docs.google.com",
+    "whatsapp": "https://web.whatsapp.com",
+    "web whatsapp": "https://web.whatsapp.com",
 }
 
 _BROWSER_TITLES = ("brave", "chrome", "edge", "firefox", "opera")
@@ -70,20 +136,88 @@ def classify_command(command: str):
     return None
 
 
-def choose_app(query, apps):
-    """Pick the best (name, app_id) from Start Menu entries."""
+def resolve_app_with_ai(query: str, apps: list, llm_client=None):
+    """
+    Uses the local LLM model to resolve the user's intended app name
+    against installed applications when direct matching fails.
+    """
+    if not query or not apps:
+        return None
+    try:
+        from core.llm_client import LLMClient
+        client = llm_client or LLMClient()
+        app_names = [item[0] for item in apps[:60]]
+        prompt = (
+            f"The user wants to open or run: '{query}'.\n"
+            f"Installed Windows applications list:\n"
+            f"{', '.join(app_names)}\n\n"
+            "Identify which application from the list best matches the user's intent, "
+            "handling similar names, synonyms, or categories (e.g. 'browser' -> Chrome/Edge, "
+            "'word' -> Microsoft Word, 'editor' -> Visual Studio Code).\n"
+            "Return ONLY the exact matched name from the list. If none match, return 'NONE'."
+        )
+        response = client.chat_completion(
+            [{"role": "user", "content": prompt}],
+            temperature=0.0,
+            max_tokens=32,
+            timeout=10,
+        )
+        content = response["choices"][0]["message"]["content"].strip().strip('"').strip("'")
+        if content and content.upper() != "NONE":
+            for name, app_id in apps:
+                if name.lower() == content.lower() or content.lower() in name.lower():
+                    print(f"[Launcher] AI resolved '{query}' -> '{name}'")
+                    return (name, app_id)
+    except Exception as exc:
+        print(f"[Launcher] AI app resolution note: {exc}")
+    return None
+
+
+def choose_app(query, apps, llm_client=None):
+    """Pick the best (name, app_id) from Start Menu entries using direct, alias, fuzzy, and AI resolution."""
     needle = (query or "").strip().lower()
     if not needle:
         return None
+
+    # 1. Alias lookup
+    alias = _APP_ALIASES.get(needle)
+    if alias:
+        target = alias.lower()
+        exact_alias = [item for item in apps if item[0].lower() == target]
+        if exact_alias:
+            return exact_alias[0]
+        contains_alias = [item for item in apps if target in item[0].lower()]
+        if contains_alias:
+            return sorted(contains_alias, key=lambda item: len(item[0]))[0]
+
+    # 2. Exact match
     exact = [item for item in apps if item[0].lower() == needle]
     if exact:
         return exact[0]
+
+    # 3. Starts-with
     starts = [item for item in apps if item[0].lower().startswith(needle)]
     if starts:
         return sorted(starts, key=lambda item: len(item[0]))[0]
+
+    # 4. Substring contains
     contains = [item for item in apps if needle in item[0].lower()]
     if contains:
         return sorted(contains, key=lambda item: len(item[0]))[0]
+
+    # 5. Fuzzy match via difflib
+    app_names_map = {item[0].lower(): item for item in apps}
+    close = difflib.get_close_matches(needle, list(app_names_map.keys()), n=1, cutoff=0.55)
+    if close:
+        matched = app_names_map[close[0]]
+        print(f"[Launcher] Fuzzy matched '{query}' -> '{matched[0]}'")
+        return matched
+
+    # 6. AI Model Semantic Search
+    ai_match = resolve_app_with_ai(query, apps, llm_client=llm_client)
+    if ai_match:
+        return ai_match
+
     return None
 
 
@@ -117,24 +251,39 @@ def list_start_apps():
     return apps
 
 
-def launch_app(app_name: str) -> str:
-    """Start an installed app. Does not type the name into Windows search."""
+def launch_app(app_name: str, llm_client=None) -> str:
+    """Start an installed app or web app fallback using fuzzy and AI matching."""
     key = app_name.strip().lower()
-    builtin = _BUILTIN_APPS.get(key)
+
+    # Builtin win32 binaries
+    builtin = _BUILTIN_APPS.get(key) or _BUILTIN_APPS.get(_APP_ALIASES.get(key, "").lower())
     if builtin:
         subprocess.Popen([builtin])
         print(f"[Launcher] Started built-in app '{app_name}' via {builtin}.")
         time.sleep(0.8)
         return builtin
 
-    match = choose_app(app_name, list_start_apps())
-    if not match:
-        raise RuntimeError(f"No installed app matches '{app_name}'.")
-    name, app_id = match
-    subprocess.Popen(["explorer.exe", f"shell:AppsFolder\\{app_id}"])
-    print(f"[Launcher] Launched '{name}' ({app_id}).")
-    time.sleep(1.2)
-    return name
+    installed = list_start_apps()
+    match = choose_app(app_name, installed, llm_client=llm_client)
+    if match:
+        name, app_id = match
+        subprocess.Popen(["explorer.exe", f"shell:AppsFolder\\{app_id}"])
+        print(f"[Launcher] Launched '{name}' ({app_id}).")
+        time.sleep(1.2)
+        return name
+
+    # Web App fallback for online services (e.g. Twitter, ChatGPT, YouTube)
+    web_url = _WEB_APP_URLS.get(key)
+    if not web_url:
+        alias_key = _APP_ALIASES.get(key, "").lower()
+        web_url = _WEB_APP_URLS.get(alias_key)
+    if web_url:
+        webbrowser.open(web_url)
+        print(f"[Launcher] Launched online service '{app_name}' via {web_url}")
+        time.sleep(1.2)
+        return f"Web: {web_url}"
+
+    raise RuntimeError(f"No installed app or online service matches '{app_name}'.")
 
 
 def find_file(name: str, roots=None) -> str:

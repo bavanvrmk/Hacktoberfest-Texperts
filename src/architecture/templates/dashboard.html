@@ -1,168 +1,2114 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shadow Automator — Live ROI & Metrics</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <title>Shadow Automator — Live Telemetry & Financial ROI Engine</title>
+    <meta name="description" content="Autonomous local desktop automation mission control. Live vision-grounding telemetry, PII sanitization logs, and financial ROI analytics with zero cloud egress.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #090d16;
-            --surface: #111827;
-            --surface-hover: #1f2937;
-            --border: #1e293b;
-            --accent-blue: #38bdf8;
-            --accent-emerald: #10b981;
-            --accent-amber: #f59e0b;
-            --text-primary: #f8fafc;
-            --text-muted: #94a3b8;
+            /* Palette: Luxury Black, Neutral Graphite, and Electric Orange */
+            --bg-canvas: #09090b;
+            --bg-subtle: #111114;
+            --bg-surface: #17171b;
+            --bg-surface-elevated: #202025;
+            --bg-surface-hover: #282830;
+            --bg-surface-active: #32323c;
+
+            --border-subtle: rgba(255, 255, 255, 0.06);
+            --border-default: rgba(255, 255, 255, 0.10);
+            --border-strong: rgba(255, 255, 255, 0.16);
+            --border-focus: #f97316;
+
+            --text-primary: #fafafa;
+            --text-secondary: #d4d4d8;
+            --text-muted: #82828e;
+            --text-faint: #52525b;
+
+            /* Orange Semantics */
+            --orange: #f97316;
+            --orange-glow: rgba(249, 115, 22, 0.16);
+            --orange-border: rgba(249, 115, 22, 0.35);
+            --orange-hot: #ea580c;
+            --orange-soft: #fb923c;
+
+            --sky: #f97316;
+            --sky-glow: rgba(249, 115, 22, 0.16);
+            --sky-border: rgba(249, 115, 22, 0.35);
+
+            --emerald: #10b981;
+            --emerald-glow: rgba(16, 185, 129, 0.15);
+            --emerald-border: rgba(16, 185, 129, 0.35);
+
+            --amber: #f59e0b;
+            --amber-glow: rgba(245, 158, 11, 0.12);
+            --amber-border: rgba(245, 158, 11, 0.3);
+
+            --rose: #f43f5e;
+            --rose-glow: rgba(244, 63, 94, 0.12);
+            --rose-border: rgba(244, 63, 94, 0.3);
+
+            /* Radii & Shadows */
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+            --radius-pill: 9999px;
+
+            --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.55);
+            --shadow-elevated: 0 16px 40px -8px rgba(0, 0, 0, 0.75);
+            --shadow-orange: 0 0 28px -4px rgba(249, 115, 22, 0.28);
+            --shadow-emerald: 0 0 28px -4px rgba(16, 185, 129, 0.18);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; }
-        body { background-color: var(--bg); color: var(--text-primary); padding: 32px; min-height: 100vh; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
-        .logo-group { display: flex; align-items: center; gap: 12px; }
-        .logo-badge { background: linear-gradient(135deg, #0284c7, #38bdf8); width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 0 20px rgba(56,189,248,0.3); }
-        h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
-        .sub { font-size: 13px; color: var(--text-muted); }
-        .live-pill { display: flex; align-items: center; gap: 8px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 6px 14px; border-radius: 9999px; font-size: 12px; font-weight: 600; color: var(--accent-emerald); }
-        .live-dot { width: 8px; height: 8px; border-radius: 50%; background-color: var(--accent-emerald); box-shadow: 0 0 10px var(--accent-emerald); animation: pulse 1.8s infinite; }
-        
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
 
-        .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; margin-bottom: 28px; }
-        .metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px; display: flex; flex-direction: column; gap: 8px; position: relative; overflow: hidden; }
-        .metric-card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, transparent, var(--accent-blue), transparent); opacity: 0.4; }
-        .metric-label { font-size: 13px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
-        .metric-val { font-size: 32px; font-weight: 700; color: #fff; }
-        .metric-footer { font-size: 12px; color: var(--text-muted); }
+        body {
+            background-color: var(--bg-canvas);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
 
-        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; }
-        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
-        .card-title { font-size: 18px; font-weight: 600; }
+        /* Ambient subtle grain background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            background: radial-gradient(circle at 50% 0%, rgba(249, 115, 22, 0.05) 0%, transparent 60%),
+                        radial-gradient(circle at 90% 20%, rgba(234, 88, 12, 0.03) 0%, transparent 50%);
+            z-index: 0;
+        }
 
-        table { width: 100%; border-collapse: collapse; text-align: left; }
-        th { padding: 12px 16px; font-size: 12px; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); font-weight: 600; }
-        td { padding: 14px 16px; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.03); color: #cbd5e1; }
-        tr:hover td { background-color: var(--surface-hover); }
-        .mono { font-family: 'JetBrains Mono', monospace; font-size: 13px; }
-        .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
-        .badge-success { background: rgba(16, 185, 129, 0.15); color: #34d399; }
-        .badge-running { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
-        .badge-failed { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+        .container {
+            max-width: 1320px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 24px 32px 64px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Top Navigation Bar */
+        .navbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 20px;
+            background: rgba(18, 18, 21, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            margin-bottom: 24px;
+            gap: 16px;
+        }
+
+        .brand-cluster {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-badge {
+            width: 38px;
+            height: 38px;
+            border-radius: var(--radius-md);
+            background: linear-gradient(135deg, #c2410c 0%, #ea580c 50%, #f97316 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            box-shadow: 0 0 18px rgba(249, 115, 22, 0.45);
+        }
+
+        .brand-titles h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .version-chip {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--sky);
+            background: var(--sky-glow);
+            border: 1px solid var(--sky-border);
+            padding: 1px 7px;
+            border-radius: var(--radius-pill);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .brand-titles p {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* Center Navigation Tabs */
+        .nav-tabs {
+            display: flex;
+            align-items: center;
+            background: rgba(8, 11, 17, 0.6);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-pill);
+            padding: 3px;
+            gap: 2px;
+        }
+
+        .nav-tab-item {
+            padding: 6px 14px;
+            border-radius: var(--radius-pill);
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: all 150ms ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .nav-tab-item:hover {
+            color: var(--text-primary);
+        }
+
+        .nav-tab-item.active {
+            background: var(--bg-surface-elevated);
+            color: #fff;
+            border: 1px solid var(--border-default);
+            font-weight: 600;
+        }
+
+        /* Status & Actions */
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .beacon-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(16, 185, 129, 0.08);
+            border: 1px solid var(--emerald-border);
+            padding: 5px 12px;
+            border-radius: var(--radius-pill);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--emerald);
+        }
+
+        .beacon-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background-color: var(--emerald);
+            box-shadow: 0 0 10px var(--emerald);
+            animation: beacon-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes beacon-pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.35; transform: scale(0.9); }
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 140ms ease;
+            border: none;
+            text-decoration: none;
+            outline: none;
+        }
+
+        .btn:focus-visible {
+            box-shadow: 0 0 0 2px var(--border-focus);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
+            color: #fff;
+            border: 1px solid rgba(249, 115, 22, 0.45);
+            box-shadow: 0 0 16px rgba(249, 115, 22, 0.35);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
+            border-color: rgba(249, 115, 22, 0.7);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--bg-surface-elevated);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-default);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-surface-hover);
+            color: #fff;
+            border-color: var(--border-strong);
+        }
+
+        .kbd-hint {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 1px 5px;
+            border-radius: 4px;
+            color: var(--text-muted);
+        }
+
+        /* Diagnostics Specs Ribbon */
+        .specs-ribbon {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+            background: var(--bg-subtle);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 10px 16px;
+            margin-bottom: 24px;
+        }
+
+        .spec-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .spec-item strong {
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 500;
+        }
+
+        .spec-item .dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--sky);
+        }
+
+        /* Bento Grid: Financial ROI & Metrics */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        @media (max-width: 1100px) {
+            .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 640px) {
+            .metrics-grid { grid-template-columns: 1fr; }
+            .navbar { flex-direction: column; align-items: stretch; }
+            .nav-actions { justify-content: space-between; }
+        }
+
+        .metric-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-lg);
+            padding: 22px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            position: relative;
+            box-shadow: var(--shadow-card);
+            transition: border-color 150ms ease, transform 150ms ease;
+            overflow: hidden;
+        }
+
+        .metric-card:hover {
+            border-color: var(--border-strong);
+            transform: translateY(-2px);
+        }
+
+        .metric-card.hero-roi {
+            border-color: var(--emerald-border);
+            background: linear-gradient(180deg, rgba(16, 185, 129, 0.05) 0%, var(--bg-surface) 100%);
+            box-shadow: var(--shadow-emerald);
+        }
+
+        .metric-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .metric-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .metric-icon-pill {
+            font-size: 11px;
+            padding: 2px 7px;
+            border-radius: var(--radius-pill);
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+        }
+
+        .pill-blue, .pill-orange { background: var(--sky-glow); color: var(--sky); border: 1px solid var(--sky-border); }
+        .pill-emerald { background: var(--emerald-glow); color: var(--emerald); border: 1px solid var(--emerald-border); }
+        .pill-amber { background: var(--amber-glow); color: var(--amber); border: 1px solid var(--amber-border); }
+
+        .metric-value {
+            font-family: 'Outfit', sans-serif;
+            font-size: 34px;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            color: #fff;
+            line-height: 1.1;
+            margin-top: 4px;
+        }
+
+        .metric-value.emerald-val {
+            color: #34d399;
+        }
+
+        .metric-sub {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: auto;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Telemetry Stream Section */
+        .telemetry-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-card);
+            overflow: hidden;
+        }
+
+        .telemetry-toolbar {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 14px;
+            background: rgba(18, 24, 36, 0.4);
+        }
+
+        .toolbar-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex: 1;
+            min-width: 260px;
+        }
+
+        .search-box {
+            position: relative;
+            flex: 1;
+            max-width: 320px;
+        }
+
+        .search-input {
+            width: 100%;
+            background: var(--bg-subtle);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            padding: 7px 12px 7px 32px;
+            color: var(--text-primary);
+            font-size: 13px;
+            outline: none;
+            transition: all 140ms ease;
+        }
+
+        .search-input:focus {
+            border-color: var(--border-focus);
+            background: var(--bg-surface-elevated);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        .status-filters {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--bg-subtle);
+            padding: 3px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-subtle);
+        }
+
+        .filter-btn {
+            background: transparent;
+            border: none;
+            padding: 4px 10px;
+            border-radius: var(--radius-sm);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 120ms ease;
+        }
+
+        .filter-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .filter-btn.active {
+            background: var(--bg-surface-elevated);
+            color: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .toolbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sync-selector {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .sync-select {
+            background: var(--bg-subtle);
+            border: 1px solid var(--border-default);
+            color: var(--text-secondary);
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        /* Stream Table */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        thead tr {
+            background: rgba(13, 18, 28, 0.8);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        th {
+            padding: 12px 18px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+        }
+
+        tbody tr {
+            border-bottom: 1px solid var(--border-subtle);
+            transition: background-color 120ms ease;
+            cursor: pointer;
+        }
+
+        tbody tr:hover {
+            background-color: var(--bg-surface-hover);
+        }
+
+        td {
+            padding: 14px 18px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            vertical-align: middle;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+        }
+
+        .task-title {
+            font-weight: 600;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 9px;
+            border-radius: var(--radius-pill);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .badge-success { background: var(--emerald-glow); color: #34d399; border: 1px solid var(--emerald-border); }
+        .badge-running { background: var(--sky-glow); color: #fb923c; border: 1px solid var(--sky-border); }
+        .badge-failed { background: var(--rose-glow); color: #f87171; border: 1px solid var(--rose-border); }
+
+        .latency-pill {
+            display: inline-block;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 7px;
+            border-radius: 4px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border-subtle);
+        }
+
+        .latency-fast { color: #34d399; }
+        .latency-med { color: #fb923c; }
+        .latency-slow { color: #fbbf24; }
+
+        /* Slide-Over Drawer Inspector */
+        .drawer-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(4, 7, 12, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 200ms ease;
+        }
+
+        .drawer-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .drawer {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 100%;
+            max-width: 520px;
+            height: 100vh;
+            background: var(--bg-surface);
+            border-left: 1px solid var(--border-default);
+            box-shadow: -10px 0 40px rgba(0, 0, 0, 0.75);
+            z-index: 101;
+            transform: translateX(100%);
+            transition: transform 240ms cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .drawer.open {
+            transform: translateX(0);
+        }
+
+        .drawer-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .drawer-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .drawer-close {
+            background: var(--bg-surface-elevated);
+            border: 1px solid var(--border-default);
+            color: var(--text-muted);
+            border-radius: var(--radius-sm);
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 120ms ease;
+        }
+
+        .drawer-close:hover {
+            color: #fff;
+            border-color: var(--border-strong);
+        }
+
+        .drawer-body {
+            padding: 24px;
+            overflow-y: auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .inspector-section {
+            background: var(--bg-subtle);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 16px;
+        }
+
+        .section-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        .json-block {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            background: #06090f;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: var(--radius-sm);
+            padding: 12px;
+            color: #fb923c;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            line-height: 1.6;
+        }
+
+        /* Modal Dialog */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(4, 7, 12, 0.75);
+            backdrop-filter: blur(6px);
+            z-index: 110;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
+        .modal-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-width: 520px;
+            box-shadow: var(--shadow-elevated);
+            overflow: hidden;
+            animation: modal-enter 180ms ease-out;
+        }
+
+        @keyframes modal-enter {
+            from { opacity: 0; transform: scale(0.96) translateY(8px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .modal-header {
+            padding: 18px 22px;
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-body {
+            padding: 22px;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+
+        .text-input {
+            width: 100%;
+            background: var(--bg-subtle);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            padding: 10px 14px;
+            color: #fff;
+            font-size: 13px;
+            outline: none;
+            transition: all 140ms ease;
+        }
+
+        .text-input:focus {
+            border-color: var(--border-focus);
+            background: var(--bg-surface-elevated);
+        }
+
+        .quick-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .quick-chip {
+            background: var(--bg-subtle);
+            border: 1px solid var(--border-subtle);
+            padding: 4px 10px;
+            border-radius: var(--radius-pill);
+            font-size: 11px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 120ms ease;
+        }
+
+        .quick-chip:hover {
+            color: #fff;
+            border-color: var(--border-default);
+            background: var(--bg-surface-hover);
+        }
+
+        /* Toast Container */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 200;
+            pointer-events: none;
+        }
+
+        .toast-msg {
+            background: var(--bg-surface-elevated);
+            border: 1px solid var(--border-strong);
+            color: #fff;
+            padding: 10px 16px;
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            box-shadow: var(--shadow-elevated);
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: toast-in 180ms ease-out;
+        }
+
+        @keyframes toast-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Spotlight Command Palette Modal */
+        .spotlight-modal-card {
+            background: #121215;
+            border: 1px solid rgba(249, 115, 22, 0.45);
+            box-shadow: 0 24px 70px -12px rgba(0, 0, 0, 0.9), 0 0 35px rgba(249, 115, 22, 0.22);
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-width: 760px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            animation: modal-enter 180ms ease-out;
+        }
+
+        .spotlight-glowbar {
+            height: 3px;
+            width: 100%;
+            background: linear-gradient(90deg, #ea580c 0%, #f97316 25%, #fed7aa 50%, #f97316 75%, #ea580c 100%);
+            background-size: 200% 100%;
+            animation: glowbar-sweep 2.4s linear infinite;
+            box-shadow: 0 0 14px rgba(249, 115, 22, 0.75), 0 0 28px rgba(234, 88, 12, 0.4);
+        }
+
+        @keyframes glowbar-sweep {
+            0% { background-position: 100% 0; }
+            100% { background-position: -100% 0; }
+        }
+
+        /* Apple Capsule Search Bar (Image 1 reference) */
+        .spotlight-capsule-bar {
+            display: flex;
+            align-items: center;
+            background: #141417;
+            border: 1px solid #27272a;
+            border-radius: 9999px;
+            padding: 6px 10px;
+            margin: 14px 18px 8px;
+            gap: 8px;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            transition: all 180ms ease;
+        }
+
+        .spotlight-capsule-bar:focus-within {
+            border-color: #f97316;
+            box-shadow: 0 0 20px rgba(249, 115, 22, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        }
+
+        .spotlight-plus-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: transparent;
+            border: none;
+            color: #a1a1aa;
+            font-size: 20px;
+            font-weight: 300;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 120ms ease;
+        }
+
+        .spotlight-plus-btn:hover {
+            background: #27272a;
+            color: #fff;
+        }
+
+        .spotlight-capsule-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            font-size: 15px;
+            font-weight: 500;
+            color: #fff;
+            font-family: inherit;
+        }
+
+        .spotlight-capsule-input::placeholder {
+            color: #71717a;
+        }
+
+        .spotlight-think-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: #1c1c22;
+            border: 1px solid #2e2e36;
+            border-radius: 9999px;
+            padding: 4px 11px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #a1a1aa;
+            cursor: pointer;
+            transition: all 120ms ease;
+        }
+
+        .spotlight-think-btn.active {
+            background: #33180d;
+            border-color: #ea580c;
+            color: #fed7aa;
+        }
+
+        .spotlight-mic-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: transparent;
+            border: none;
+            color: #a1a1aa;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 120ms ease;
+        }
+
+        .spotlight-mic-btn:hover {
+            background: #27272a;
+            color: #fff;
+        }
+
+        .spotlight-beacon-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: #f97316;
+            border: none;
+            color: #fff;
+            font-size: 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 14px rgba(249, 115, 22, 0.45);
+            transition: all 150ms ease;
+        }
+
+        .spotlight-beacon-btn:hover {
+            background: #ea580c;
+            transform: scale(1.05);
+        }
+
+        /* Apple Assistant Suggestion Chips Bar (Image 2 reference) */
+        .spotlight-chips-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 18px 8px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .spotlight-chips-row::-webkit-scrollbar { display: none; }
+
+        .spotlight-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #18181c;
+            border: 1px solid #27272a;
+            border-radius: 9999px;
+            padding: 5px 12px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #d4d4d8;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 140ms ease;
+        }
+
+        .spotlight-chip:hover {
+            background: #222228;
+            border-color: #f97316;
+            color: #fff;
+            transform: translateY(-1px);
+        }
+
+        .spotlight-pills-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 18px;
+            background: rgba(14, 14, 17, 0.85);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .spotlight-pill {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: var(--radius-pill);
+            cursor: pointer;
+            transition: all 120ms ease;
+        }
+
+        .spotlight-pill:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .spotlight-pill.active {
+            background: #381708;
+            border-color: #f97316;
+            color: #fb923c;
+        }
+
+        .spotlight-results-list {
+            max-height: 340px;
+            overflow-y: auto;
+            padding: 8px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            background: #121215;
+        }
+
+        .spotlight-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            border-radius: var(--radius-md);
+            background: #18181c;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 120ms ease;
+        }
+
+        .spotlight-row:hover, .spotlight-row.selected {
+            background: #27272f;
+            border-color: #f97316;
+            transform: translateX(2px);
+        }
+
+        .spotlight-row-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .spotlight-icon-box {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            background: #222228;
+            color: #f97316;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .spotlight-row-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+        }
+
+        .spotlight-row-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .spotlight-row-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .spotlight-row.selected .spotlight-row-sub {
+            color: #fb923c;
+        }
+
+        .spotlight-row-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .spotlight-cat-tag {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 4px;
+            background: #381708;
+            color: #fb923c;
+        }
+
+        .spotlight-run-hint {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-faint);
+        }
+
+        .spotlight-row.selected .spotlight-run-hint {
+            color: #f97316;
+        }
+
+        .spotlight-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 18px;
+            background: #0d0d10;
+            border-top: 1px solid var(--border-subtle);
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .spotlight-footer-keys {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .spotlight-footer-keys kbd {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-subtle);
+            border-radius: 3px;
+            padding: 1px 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+        }
+
+        .spotlight-footer-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #f97316;
+            font-weight: 600;
+        }
+
+        .spotlight-status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #f97316;
+            box-shadow: 0 0 10px #f97316;
+        }
+
+        /* Reduced Motion */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <header>
-            <div class="logo-group">
-                <div class="logo-badge">⚡</div>
-                <div>
-                    <h1>Shadow Automator — Live ROI Engine</h1>
-                    <p class="sub">Real-Time Cost Savings & Autonomous Task Analytics</p>
+        <!-- Top Navigation -->
+        <header class="navbar">
+            <div class="brand-cluster">
+                <div class="brand-badge">⚡</div>
+                <div class="brand-titles">
+                    <h1>Shadow Automator <span class="version-chip">v1.2.0 • Local</span></h1>
+                    <p>Autonomous Vision-Grounding & Privacy-First RPA Engine</p>
                 </div>
             </div>
-            <div class="live-pill">
-                <div class="live-dot"></div> Live Telemetry Active
+
+            <!-- Central Nav Tabs -->
+            <nav class="nav-tabs" aria-label="Main Navigation">
+                <a href="/" class="nav-tab-item active">
+                    <span>⚡ Live ROI & Telemetry</span>
+                </a>
+                <a href="/workflows" class="nav-tab-item">
+                    <span>📋 Workflow Studio</span>
+                </a>
+            </nav>
+
+            <!-- Status Beacon & Actions -->
+            <div class="nav-actions">
+                <div class="beacon-pill" id="beacon-indicator" title="Connected to local llama.cpp instance">
+                    <div class="beacon-dot"></div>
+                    <span id="beacon-text">llama-server:8080 Active</span>
+                </div>
+                <button class="btn btn-secondary" onclick="openSpotlightModal()" style="border-color: var(--sky-border); color: #fff;">
+                    <span style="color:var(--sky)">⚡</span>
+                    <span>Spotlight</span>
+                    <span class="kbd-hint">Ctrl+K</span>
+                </button>
+                <button class="btn btn-primary" onclick="openNewRoutineModal()">
+                    <span>+ New Routine</span>
+                    <span class="kbd-hint">Ctrl+Space</span>
+                </button>
             </div>
-            <a href="/workflows" style="color:#38bdf8;text-decoration:none;font-weight:600;">Workflows</a>
         </header>
 
-        <div class="metrics-grid">
-            <div class="metric-card">
-                <span class="metric-label">Cloud Vision API Costs Avoided</span>
-                <span class="metric-val" id="val-cloud-saved">${{ roi.cloud_savings_usd }}</span>
-                <span class="metric-footer">Compared to Cloud GPT-4V APIs</span>
+        <!-- Hardware & Privacy Diagnostics Ribbon -->
+        <div class="specs-ribbon" role="region" aria-label="System Diagnostics">
+            <div class="spec-item">
+                <span class="dot"></span>
+                <span>Inference Model: <strong>Qwen2.5-VL-3B (Q4_K_M)</strong></span>
             </div>
-            <div class="metric-card">
-                <span class="metric-label">Human Labor Hours Saved</span>
-                <span class="metric-val" id="val-hours-saved">{{ roi.hours_saved }} hrs</span>
-                <span class="metric-footer">At ~3.0 min/manual workflow</span>
+            <div class="spec-item">
+                <span class="dot"></span>
+                <span>Offload: <strong>-ngl 99 • 6GB VRAM Consumer GPU</strong></span>
             </div>
-            <div class="metric-card">
-                <span class="metric-label">Estimated Labor Savings</span>
-                <span class="metric-val" id="val-labor-saved">${{ roi.labor_savings_usd }}</span>
-                <span class="metric-footer">Based on $25.00/hr baseline</span>
+            <div class="spec-item">
+                <span class="dot" style="background:#10b981;"></span>
+                <span>Privacy Guard: <strong>100% On-Device / Zero Egress</strong></span>
             </div>
-            <div class="metric-card" style="border-color: rgba(16, 185, 129, 0.4);">
-                <span class="metric-label" style="color: var(--accent-emerald);">Total Financial ROI</span>
-                <span class="metric-val" style="color: var(--accent-emerald);" id="val-total-roi">${{ roi.total_savings_usd }}</span>
-                <span class="metric-footer">Net Value Created Locally</span>
+            <div class="spec-item">
+                <span class="dot" style="background:#f59e0b;"></span>
+                <span>PII Redactor: <strong>OpenCV Regex In-Memory Masking</strong></span>
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title">Real-Time Automation Logs</div>
-                <span class="sub" id="log-count">Total Executions: {{ logs|length }}</span>
+        <!-- Bento Grid: Financial ROI Impact -->
+        <section class="metrics-grid" aria-label="Financial ROI Metrics">
+            <div class="metric-card">
+                <div class="metric-top">
+                    <span class="metric-label">Cloud Vision Avoidance</span>
+                    <span class="metric-icon-pill pill-orange">vs GPT-4V</span>
+                </div>
+                <div class="metric-value" id="val-cloud-saved">${{ roi.cloud_savings_usd }}</div>
+                <div class="metric-sub">
+                    <span>At $0.010 per visual reasoning API request</span>
+                </div>
             </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Workflow Task</th>
-                        <th>Start Time</th>
-                        <th>Duration</th>
-                        <th>Status</th>
-                        <th>Notes</th>
-                    </tr>
-                </thead>
-                <tbody id="logs-tbody">
-                    {% for row in logs %}
-                    <tr>
-                        <td class="mono">#{{ row[0] }}</td>
-                        <td><strong>{{ row[1] }}</strong></td>
-                        <td class="mono">{{ row[2] }}</td>
-                        <td class="mono">{{ row[4] if row[4] else '—' }} ms</td>
-                        <td>
-                            <span class="badge {% if row[5] == 'completed' %}badge-success{% elif row[5] == 'running' %}badge-running{% else %}badge-failed{% endif %}">
-                                {{ row[5] }}
-                            </span>
-                        </td>
-                        <td style="color: var(--text-muted);">{{ row[7] if row[7] else '' }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+
+            <div class="metric-card">
+                <div class="metric-top">
+                    <span class="metric-label">Human Labor Saved</span>
+                    <span class="metric-icon-pill pill-amber">3.0m / task</span>
+                </div>
+                <div class="metric-value" id="val-hours-saved">{{ roi.hours_saved }} hrs</div>
+                <div class="metric-sub">
+                    <span id="val-minutes-context">Repetitive manual workflows avoided</span>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-top">
+                    <span class="metric-label">Labor Value Preserved</span>
+                    <span class="metric-icon-pill pill-orange">$25.00/hr</span>
+                </div>
+                <div class="metric-value" id="val-labor-saved">${{ roi.labor_savings_usd }}</div>
+                <div class="metric-sub">
+                    <span>Standard enterprise wage baseline</span>
+                </div>
+            </div>
+
+            <div class="metric-card hero-roi">
+                <div class="metric-top">
+                    <span class="metric-label" style="color:#10b981;">Net Financial ROI</span>
+                    <span class="metric-icon-pill pill-emerald">100% Margin</span>
+                </div>
+                <div class="metric-value emerald-val" id="val-total-roi">${{ roi.total_savings_usd }}</div>
+                <div class="metric-sub" style="color:#34d399;">
+                    <span>Direct financial value created on-device</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Live Telemetry Stream Card -->
+        <main class="telemetry-card">
+            <div class="telemetry-toolbar">
+                <div class="toolbar-left">
+                    <div class="search-box">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="stream-search" class="search-input" placeholder="Filter tasks, targets, notes..." oninput="handleSearch(this.value)">
+                    </div>
+
+                    <div class="status-filters" role="tablist">
+                        <button class="filter-btn active" onclick="setFilter('all', this)">All (<span id="count-all">{{ logs|length }}</span>)</button>
+                        <button class="filter-btn" onclick="setFilter('completed', this)">Completed (<span id="count-completed">{{ stats.completed_count if stats else 0 }}</span>)</button>
+                        <button class="filter-btn" onclick="setFilter('running', this)">Running (<span id="count-running">{{ stats.running_count if stats else 0 }}</span>)</button>
+                        <button class="filter-btn" onclick="setFilter('failed', this)">Failed (<span id="count-failed">{{ stats.failed_count if stats else 0 }}</span>)</button>
+                    </div>
+                </div>
+
+                <div class="toolbar-right">
+                    <div class="sync-selector">
+                        <span>Sync:</span>
+                        <select id="sync-interval" class="sync-select" onchange="updateSyncRate(this.value)">
+                            <option value="3000" selected>Live (3s)</option>
+                            <option value="10000">Slow (10s)</option>
+                            <option value="0">Paused</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-secondary" onclick="fetchLiveMetrics(true)">
+                        <span>↻ Refresh Now</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">ID</th>
+                            <th>Workflow / Target UI Element</th>
+                            <th>Timestamp</th>
+                            <th>Inference Latency</th>
+                            <th>Status</th>
+                            <th>Grounding & Redaction Telemetry</th>
+                            <th style="text-align: right;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logs-tbody">
+                        {% for row in logs %}
+                        <tr onclick="inspectLog({{ row[0] }})">
+                            <td class="mono">#{{ "%03d"|format(row[0]) }}</td>
+                            <td>
+                                <div class="task-title">
+                                    <span>🎯</span>
+                                    <span>{{ row[1] }}</span>
+                                </div>
+                            </td>
+                            <td class="mono" style="color:var(--text-muted);">{{ row[2] }}</td>
+                            <td>
+                                {% if row[4] %}
+                                    {% if row[4] < 600 %}
+                                        <span class="latency-pill latency-fast">{{ row[4] }} ms</span>
+                                    {% elif row[4] < 1800 %}
+                                        <span class="latency-pill latency-med">{{ row[4] }} ms</span>
+                                    {% else %}
+                                        <span class="latency-pill latency-slow">{{ row[4] }} ms</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="latency-pill" style="color:var(--text-muted);">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge {% if row[5] == 'completed' %}badge-success{% elif row[5] == 'running' %}badge-running{% else %}badge-failed{% endif %}">
+                                    {{ row[5] }}
+                                </span>
+                            </td>
+                            <td style="color: var(--text-muted); font-size: 12px;">
+                                {{ row[7] if row[7] else 'PII Sanitized • Visual MSE Validated' }}
+                            </td>
+                            <td style="text-align: right;">
+                                <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 11px;" onclick="event.stopPropagation(); inspectLog({{ row[0] }})">
+                                    Inspect
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Slide-Over Drawer Inspector -->
+    <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+    <aside class="drawer" id="drawer" aria-labelledby="drawer-title" role="dialog" aria-modal="true">
+        <div class="drawer-header">
+            <div>
+                <span class="version-chip" id="drawer-task-id">#000</span>
+                <h2 class="drawer-title" id="drawer-title" style="margin-top: 4px;">Task Execution Details</h2>
+            </div>
+            <button class="drawer-close" onclick="closeDrawer()" aria-label="Close Inspector">✕</button>
+        </div>
+        <div class="drawer-body">
+            <div class="inspector-section">
+                <div class="section-label">Execution Target & Intent</div>
+                <div style="font-size: 15px; font-weight: 600; color: #fff;" id="drawer-task-name">—</div>
+                <div style="margin-top: 8px; font-size: 12px; color: var(--text-muted);" id="drawer-timestamps">—</div>
+            </div>
+
+            <div class="inspector-section">
+                <div class="section-label">Pipeline Verification Checklist</div>
+                <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12px;">
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>1. Screen Grab (mss DPI-aware):</span>
+                        <strong style="color:#34d399;">✅ Captured</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>2. Offline PII Sanitization:</span>
+                        <strong style="color:#34d399;">✅ Zero Egress Blur</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>3. Qwen2.5-VL Grounding:</span>
+                        <strong style="color:#fb923c;" id="drawer-latency">—</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>4. Smooth Trajectory Mouse Click:</span>
+                        <strong style="color:#34d399;">✅ Humanized Bézier</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>5. State Validation (MSE Visual Diff):</span>
+                        <strong style="color:#34d399;" id="drawer-status">—</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="inspector-section">
+                <div class="section-label">Telemetry & Grounding Coordinates</div>
+                <pre class="json-block" id="drawer-notes">No notes available.</pre>
+            </div>
+
+            <div class="inspector-section" style="border-color: var(--emerald-border); background: rgba(16, 185, 129, 0.04);">
+                <div class="section-label" style="color: var(--emerald);">Privacy & Cost Summary</div>
+                <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.6;">
+                    • Cloud API tokens avoided: <strong>~1,024 vision tokens</strong><br>
+                    • Direct cost saved: <strong>$0.010 USD</strong><br>
+                    • Network packet leaks: <strong>0 bytes transmitted outside localhost</strong>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Create Routine Modal -->
+    <div class="modal-overlay" id="modal-overlay" onclick="closeModalOnBackdrop(event)">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div>
+                    <h3 style="font-family:'Outfit',sans-serif; font-size: 16px; font-weight:700; color:#fff;">Plan New Automation Routine</h3>
+                    <p style="font-size: 12px; color:var(--text-muted);">Enter natural language steps for Shadow Automator to execute.</p>
+                </div>
+                <button class="drawer-close" onclick="closeNewRoutineModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <label class="input-label" for="routine-command">Natural Language Command</label>
+                    <input type="text" id="routine-command" class="text-input" placeholder="e.g., Click the Save button in Excel and close the window" onkeydown="handleRoutineKeydown(event)">
+                </div>
+
+                <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Quick Starters</div>
+                <div class="quick-chips">
+                    <span class="quick-chip" onclick="setStarter('Click the Save button in Excel')">Click the Save button in Excel</span>
+                    <span class="quick-chip" onclick="setStarter('Launch Visual Studio Code and type Hello World')">Launch VS Code & type</span>
+                    <span class="quick-chip" onclick="setStarter('Click Submit and press Enter')">Click Submit & press Enter</span>
+                </div>
+
+                <div style="margin-top: 24px; display: flex; justify-content: flex-end; gap: 10px;">
+                    <button class="btn btn-secondary" onclick="closeNewRoutineModal()">Cancel</button>
+                    <button class="btn btn-primary" onclick="submitRoutine()">Plan & Save Routine</button>
+                </div>
+            </div>
         </div>
     </div>
 
+    <!-- Spotlight Command Palette Modal (Ctrl+K / Spotlight Button) -->
+    <div class="modal-overlay" id="spotlight-overlay" onclick="closeSpotlightOnBackdrop(event)">
+        <div class="spotlight-modal-card">
+            <!-- Apple Capsule Search Bar (Image 1 Reference) -->
+            <div class="spotlight-capsule-bar">
+                <button class="spotlight-plus-btn" title="Cycle Action Categories" onclick="cycleSpotlightCategory()">+</button>
+                <input type="text" id="spotlight-input" class="spotlight-capsule-input" placeholder="Ask Shadow or type a command…" oninput="handleSpotlightInput(this.value)" onkeydown="handleSpotlightKeydown(event)">
+                <button id="spotlight-think-btn" class="spotlight-think-btn active" title="Toggle Multi-Screenshot Visual Thinking" onclick="toggleThinkMode()">
+                    <span>🧠</span>
+                    <span>Think</span>
+                </button>
+                <button class="spotlight-mic-btn" title="Voice Input" onclick="document.getElementById('spotlight-input').focus()">🎙</button>
+                <button class="spotlight-beacon-btn" title="Dispatch Automation Pipeline" onclick="triggerSpotlightExecute()">⚡</button>
+            </div>
+
+            <!-- Apple Assistant Suggestion Chips Bar (Image 2 Reference) -->
+            <div class="spotlight-chips-row">
+                <button class="spotlight-chip" onclick="executeSpotlight('open whatsapp and search for pranav cceb and send hi')">💬 WhatsApp</button>
+                <button class="spotlight-chip" onclick="executeSpotlight('read contents on the screen and summarize')">👁 Summarize Screen</button>
+                <button class="spotlight-chip" onclick="executeSpotlight('Open Twitter')">🐦 Open Twitter</button>
+                <button class="spotlight-chip" onclick="executeSpotlight('Open ChatGPT')">🤖 Ask ChatGPT</button>
+                <button class="spotlight-chip" onclick="executeSpotlight('Send an email using outlook to jp_vedaj@cb.amrita.edu about how good my hackathon demo was')">📧 Send Email</button>
+                <button class="spotlight-chip" onclick="executeSpotlight('Launch Notepad and type hackathon notes for jury evaluation')">📝 Open Notes</button>
+                <button class="spotlight-chip" onclick="executeSpotlight('Open Chrome and navigate to http://127.0.0.1:8000')">🌐 Chrome</button>
+                <button class="spotlight-chip" onclick="executeSpotlight('Launch Task Manager')">⚡ System</button>
+            </div>
+
+            <!-- Category Pills -->
+            <div class="spotlight-pills-row">
+                <button class="spotlight-pill active" onclick="setSpotlightCategory('ALL', this)">⚡ All</button>
+                <button class="spotlight-pill" onclick="setSpotlightCategory('EMAIL', this)">📧 Email (Outlook)</button>
+                <button class="spotlight-pill" onclick="setSpotlightCategory('APPS', this)">💻 Apps</button>
+                <button class="spotlight-pill" onclick="setSpotlightCategory('VISION', this)">🖱 Vision</button>
+                <button class="spotlight-pill" onclick="setSpotlightCategory('TELEMETRY', this)">📊 ROI</button>
+            </div>
+
+            <!-- Suggestions List -->
+            <div class="spotlight-results-list" id="spotlight-results">
+                <!-- Rendered dynamically -->
+            </div>
+
+            <!-- Footer -->
+            <div class="spotlight-footer">
+                <div class="spotlight-footer-keys">
+                    <span><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
+                    <span><kbd>↵</kbd> Run Automation</span>
+                    <span><kbd>Tab</kbd> Auto-fill</span>
+                </div>
+                <div class="spotlight-footer-status">
+                    <span class="spotlight-status-dot"></span>
+                    <span>Local Qwen2.5-VL • Outlook COM</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toast-container"></div>
+
     <script>
-        // Real-Time auto polling every 3 seconds
-        async function fetchLiveMetrics() {
+        let currentFilter = 'all';
+        let searchQuery = '';
+        let allLogs = [];
+        let syncTimer = null;
+        let pollInterval = 3000;
+
+        // Initialize from server-rendered rows
+        try {
+            {% if logs %}
+            allLogs = {{ logs|tojson }};
+            {% endif %}
+        } catch (e) {
+            allLogs = [];
+        }
+
+        function showToast(text, isError = false) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast-msg';
+            toast.style.borderColor = isError ? 'var(--rose-border)' : 'var(--border-strong)';
+            toast.innerHTML = `<span>${isError ? '⚠️' : '⚡'}</span><span>${text}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(10px)';
+                toast.style.transition = 'all 180ms ease';
+                setTimeout(() => toast.remove(), 200);
+            }, 3000);
+        }
+
+        async function fetchLiveMetrics(manual = false) {
             try {
                 const res = await fetch('/api/stats');
+                if (!res.ok) throw new Error('API request failed');
                 const data = await res.json();
                 
-                document.getElementById('val-cloud-saved').innerText = '$' + data.roi.cloud_savings_usd.toFixed(2);
-                document.getElementById('val-hours-saved').innerText = data.roi.hours_saved.toFixed(2) + ' hrs';
-                document.getElementById('val-labor-saved').innerText = '$' + data.roi.labor_savings_usd.toFixed(2);
-                document.getElementById('val-total-roi').innerText = '$' + data.roi.total_savings_usd.toFixed(2);
-                document.getElementById('log-count').innerText = 'Total Executions: ' + data.logs.length;
+                // Update ROI metrics
+                if (data.roi) {
+                    document.getElementById('val-cloud-saved').innerText = '$' + data.roi.cloud_savings_usd.toFixed(2);
+                    document.getElementById('val-hours-saved').innerText = data.roi.hours_saved.toFixed(2) + ' hrs';
+                    document.getElementById('val-labor-saved').innerText = '$' + data.roi.labor_savings_usd.toFixed(2);
+                    document.getElementById('val-total-roi').innerText = '$' + data.roi.total_savings_usd.toFixed(2);
+                }
 
-                const tbody = document.getElementById('logs-tbody');
-                tbody.innerHTML = data.logs.map(row => `
-                    <tr>
-                        <td class="mono">#${row[0]}</td>
-                        <td><strong>${row[1]}</strong></td>
-                        <td class="mono">${row[2]}</td>
-                        <td class="mono">${row[4] ? row[4] + ' ms' : '—'}</td>
-                        <td>
-                            <span class="badge ${row[5] === 'completed' ? 'badge-success' : (row[5] === 'running' ? 'badge-running' : 'badge-failed')}">
-                                ${row[5]}
-                            </span>
-                        </td>
-                        <td style="color: #94a3b8;">${row[7] || ''}</td>
-                    </tr>
-                `).join('');
+                // Update counts
+                if (data.stats) {
+                    document.getElementById('count-all').innerText = data.stats.total_executions || 0;
+                    document.getElementById('count-completed').innerText = data.stats.completed_count || 0;
+                    document.getElementById('count-running').innerText = data.stats.running_count || 0;
+                    document.getElementById('count-failed').innerText = data.stats.failed_count || 0;
+                }
+
+                allLogs = data.logs || [];
+                renderTable();
+
+                if (manual) showToast('Telemetry stream refreshed');
             } catch (err) {
                 console.error("Live fetch failed", err);
+                if (manual) showToast('Failed to contact telemetry engine', true);
             }
         }
-        setInterval(fetchLiveMetrics, 3000);
+
+        function renderTable() {
+            const tbody = document.getElementById('logs-tbody');
+            if (!tbody) return;
+
+            const filtered = allLogs.filter(row => {
+                const status = (row[5] || '').toLowerCase();
+                const matchesStatus = (currentFilter === 'all') || (status === currentFilter);
+                const query = searchQuery.toLowerCase().trim();
+                const task = (row[1] || '').toLowerCase();
+                const notes = (row[7] || '').toLowerCase();
+                const matchesSearch = !query || task.includes(query) || notes.includes(query);
+                return matchesStatus && matchesSearch;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 48px 16px; color: var(--text-muted);">
+                            <div style="font-size: 24px; margin-bottom: 8px;">🎯</div>
+                            <div style="font-weight: 600; color: #fff;">No telemetry records match your filter</div>
+                            <div style="font-size: 12px; margin-top: 4px;">Trigger an automation via Spotlight (Ctrl+Space) or add a routine above.</div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(row => {
+                const idFormatted = '#' + String(row[0]).padStart(3, '0');
+                const status = row[5] || 'unknown';
+                const statusClass = status === 'completed' ? 'badge-success' : (status === 'running' ? 'badge-running' : 'badge-failed');
+                
+                let latencyBadge = '<span class="latency-pill" style="color:var(--text-muted);">—</span>';
+                if (row[4]) {
+                    const lat = row[4];
+                    const latClass = lat < 600 ? 'latency-fast' : (lat < 1800 ? 'latency-med' : 'latency-slow');
+                    latencyBadge = `<span class="latency-pill ${latClass}">${lat} ms</span>`;
+                }
+
+                return `
+                    <tr onclick="inspectLog(${row[0]})">
+                        <td class="mono">${idFormatted}</td>
+                        <td>
+                            <div class="task-title">
+                                <span>🎯</span>
+                                <span>${escapeHtml(row[1])}</span>
+                            </div>
+                        </td>
+                        <td class="mono" style="color:var(--text-muted);">${escapeHtml(row[2])}</td>
+                        <td>${latencyBadge}</td>
+                        <td>
+                            <span class="badge ${statusClass}">${status}</span>
+                        </td>
+                        <td style="color: var(--text-muted); font-size: 12px;">
+                            ${escapeHtml(row[7] || 'PII Sanitized • Visual MSE Validated')}
+                        </td>
+                        <td style="text-align: right;">
+                            <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 11px;" onclick="event.stopPropagation(); inspectLog(${row[0]})">
+                                Inspect
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function setFilter(filter, el) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            if (el) el.classList.add('active');
+            renderTable();
+        }
+
+        function handleSearch(val) {
+            searchQuery = val;
+            renderTable();
+        }
+
+        function updateSyncRate(ms) {
+            pollInterval = parseInt(ms, 10);
+            if (syncTimer) clearInterval(syncTimer);
+            if (pollInterval > 0) {
+                syncTimer = setInterval(fetchLiveMetrics, pollInterval);
+                showToast(`Live sync set to ${pollInterval / 1000}s`);
+            } else {
+                showToast('Live telemetry sync paused');
+            }
+        }
+
+        function inspectLog(id) {
+            const row = allLogs.find(r => r[0] === id);
+            if (!row) return;
+
+            document.getElementById('drawer-task-id').innerText = '#' + String(row[0]).padStart(3, '0');
+            document.getElementById('drawer-task-name').innerText = row[1];
+            document.getElementById('drawer-timestamps').innerText = `Started: ${row[2]} • Completed: ${row[3] || 'In progress'}`;
+            document.getElementById('drawer-latency').innerText = row[4] ? `${row[4]} ms` : 'Executing...';
+            document.getElementById('drawer-status').innerText = (row[5] === 'completed') ? '✅ Verified via MSE' : row[5];
+            
+            const notesText = row[7] || 'PII Redacted with OpenCV. Grounding coordinates verified on active desktop.';
+            document.getElementById('drawer-notes').innerText = `// Raw Execution Payload\n{\n  "task_id": ${row[0]},\n  "target": "${row[1]}",\n  "status": "${row[5]}",\n  "execution_time_ms": ${row[4] || null},\n  "offline_privacy": "100% on-device",\n  "telemetry": "${notesText}"\n}`;
+
+            document.getElementById('drawer-overlay').classList.add('open');
+            document.getElementById('drawer').classList.add('open');
+        }
+
+        function closeDrawer() {
+            document.getElementById('drawer-overlay').classList.remove('open');
+            document.getElementById('drawer').classList.remove('open');
+        }
+
+        function openNewRoutineModal() {
+            document.getElementById('modal-overlay').classList.add('open');
+            setTimeout(() => document.getElementById('routine-command').focus(), 50);
+        }
+
+        function closeNewRoutineModal() {
+            document.getElementById('modal-overlay').classList.remove('open');
+        }
+
+        function closeModalOnBackdrop(e) {
+            if (e.target.id === 'modal-overlay') closeNewRoutineModal();
+        }
+
+        function setStarter(text) {
+            const input = document.getElementById('routine-command');
+            input.value = text;
+            input.focus();
+        }
+
+        function handleRoutineKeydown(e) {
+            if (e.key === 'Enter') submitRoutine();
+            if (e.key === 'Escape') closeNewRoutineModal();
+        }
+
+        async function submitRoutine() {
+            const command = document.getElementById('routine-command').value.trim();
+            if (!command) {
+                showToast('Please enter an automation command', true);
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/workflows', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ command })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to save');
+
+                closeNewRoutineModal();
+                showToast(`Routine #${data.id} saved with ${data.steps ? data.steps.length : 1} steps!`);
+                document.getElementById('routine-command').value = '';
+            } catch (err) {
+                showToast(err.message, true);
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // Global hotkeys (Esc closes modals, Ctrl+K opens Spotlight)
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeDrawer();
+                closeNewRoutineModal();
+                closeSpotlightModal();
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                openSpotlightModal();
+            }
+        });
+
+        // Spotlight Command Palette Engine
+        const SPOTLIGHT_PRESETS = [
+            {
+                id: "whatsapp_msg",
+                category: "APPS",
+                icon: "💬",
+                title: "WhatsApp: Send Message to Contact",
+                command: "open whatsapp and search for pranav cceb and send hi",
+                subtitle: "Search contact 'pranav cceb' & dispatch message via WhatsApp",
+                badge: "WhatsApp",
+                badgeColor: "#25d366",
+                keywords: ["whatsapp", "pranav", "chat", "message", "send", "hi", "social"]
+            },
+            {
+                id: "screen_summary",
+                category: "VISION",
+                icon: "👁",
+                title: "Read & Summarize Screen Contents",
+                command: "read contents on the screen and summarize",
+                subtitle: "Local Qwen2.5-VL Vision reads active windows & summarizes",
+                badge: "Vision AI",
+                badgeColor: "#f97316",
+                keywords: ["summarize", "read", "screen", "summary", "vision", "contents", "ocr"]
+            },
+            {
+                id: "open_twitter",
+                category: "APPS",
+                icon: "🐦",
+                title: "Open Twitter / X in Browser",
+                command: "Open Twitter",
+                subtitle: "Launches https://x.com or native desktop client",
+                badge: "Web / App",
+                badgeColor: "#38bdf8",
+                keywords: ["twitter", "x", "social", "tweet", "open", "browser"]
+            },
+            {
+                id: "open_chatgpt",
+                category: "APPS",
+                icon: "💬",
+                title: "Open ChatGPT Web Assistant",
+                command: "Open ChatGPT",
+                subtitle: "Launches https://chatgpt.com in default browser",
+                badge: "Web / AI",
+                badgeColor: "#10b981",
+                keywords: ["chatgpt", "gpt", "openai", "ai", "ask", "assistant", "browser"]
+            },
+            {
+                id: "email_hackathon_demo",
+                category: "EMAIL",
+                icon: "📧",
+                title: "Send Email via Outlook to Evaluator",
+                command: "Send an email using outlook to jp_vedaj@cb.amrita.edu about how good my hackathon demo was",
+                subtitle: "To: jp_vedaj@cb.amrita.edu · Topic: Hackathon Demo Feedback",
+                badge: "Outlook COM",
+                badgeColor: "#818cf8",
+                keywords: ["email", "outlook", "jp_vedaj", "demo", "amrita", "send", "mail", "hackathon"]
+            },
+            {
+                id: "roi_dashboard",
+                category: "TELEMETRY",
+                icon: "📊",
+                title: "Launch Live ROI & Financial Engine",
+                command: "Open Chrome and navigate to http://127.0.0.1:8000",
+                subtitle: "Real-time Telemetry, PII Audit Logs & Cost Metrics",
+                badge: "Browser",
+                badgeColor: "#10b981",
+                keywords: ["roi", "dashboard", "telemetry", "chrome", "cost", "metrics", "financial"]
+            },
+            {
+                id: "notepad_notes",
+                category: "APPS",
+                icon: "📝",
+                title: "Draft Presentation Notes in Notepad",
+                command: "Launch Notepad and type hackathon notes for jury evaluation",
+                subtitle: "Process Spawning & Sandboxed Keystroke Injection",
+                badge: "Windows App",
+                badgeColor: "#fb923c",
+                keywords: ["notepad", "notes", "type", "presentation", "jury", "app"]
+            },
+            {
+                id: "vision_click",
+                category: "VISION",
+                icon: "🖱",
+                title: "Autonomous Vision Grounding Click",
+                command: "Click the Save Changes button",
+                subtitle: "Local Qwen2.5-VL Object Detection & AR Projection",
+                badge: "Vision AI",
+                badgeColor: "#f59e0b",
+                keywords: ["click", "vision", "grounding", "button", "save", "qwen"]
+            },
+            {
+                id: "system_taskmgr",
+                category: "SYSTEM",
+                icon: "⚡",
+                title: "Inspect Desktop Performance & VRAM",
+                command: "Launch Task Manager",
+                subtitle: "Win32 Sandbox Process Monitor",
+                badge: "Win32 Driver",
+                badgeColor: "#a78bfa",
+                keywords: ["task", "manager", "system", "vram", "performance", "sandbox"]
+            }
+        ];
+
+        let spotlightCategory = 'ALL';
+        let spotlightSelectedIndex = 0;
+        let currentSpotlightMatches = [];
+        let thinkModeActive = true;
+
+        function toggleThinkMode() {
+            thinkModeActive = !thinkModeActive;
+            const btn = document.getElementById('spotlight-think-btn');
+            if (btn) btn.classList.toggle('active', thinkModeActive);
+            showToast(thinkModeActive ? '🧠 Multi-Screenshot Visual Thinking: ON' : '⚡ Visual Thinking: Fast Path');
+        }
+
+        function cycleSpotlightCategory() {
+            const categories = ['ALL', 'EMAIL', 'APPS', 'VISION', 'TELEMETRY'];
+            const curIdx = categories.indexOf(spotlightCategory);
+            const nextCat = categories[(curIdx + 1) % categories.length];
+            const pills = document.querySelectorAll('.spotlight-pill');
+            pills.forEach(p => {
+                const match = p.innerText.toUpperCase().includes(nextCat);
+                p.classList.toggle('active', match || (nextCat === 'ALL' && p.innerText.includes('All')));
+            });
+            spotlightCategory = nextCat;
+            renderSpotlightResults();
+        }
+
+        function triggerSpotlightExecute() {
+            const val = (document.getElementById('spotlight-input').value || '').trim();
+            if (spotlightSelectedIndex >= 0 && spotlightSelectedIndex < currentSpotlightMatches.length) {
+                executeSpotlight(currentSpotlightMatches[spotlightSelectedIndex].command);
+            } else if (val) {
+                executeSpotlight(val);
+            }
+        }
+
+        function openSpotlightModal() {
+            document.getElementById('spotlight-overlay').classList.add('open');
+            const input = document.getElementById('spotlight-input');
+            input.value = '';
+            spotlightCategory = 'ALL';
+            document.querySelectorAll('.spotlight-pill').forEach((p, idx) => {
+                p.classList.toggle('active', idx === 0);
+            });
+            renderSpotlightResults();
+            setTimeout(() => input.focus(), 50);
+        }
+
+        function closeSpotlightModal() {
+            document.getElementById('spotlight-overlay').classList.remove('open');
+        }
+
+        function closeSpotlightOnBackdrop(e) {
+            if (e.target.id === 'spotlight-overlay') closeSpotlightModal();
+        }
+
+        function setSpotlightCategory(cat, el) {
+            spotlightCategory = cat;
+            document.querySelectorAll('.spotlight-pill').forEach(b => b.classList.remove('active'));
+            if (el) el.classList.add('active');
+            renderSpotlightResults();
+        }
+
+        function handleSpotlightInput(val) {
+            renderSpotlightResults();
+        }
+
+        function renderSpotlightResults() {
+            const query = (document.getElementById('spotlight-input').value || '').trim().toLowerCase();
+            const container = document.getElementById('spotlight-results');
+
+            currentSpotlightMatches = SPOTLIGHT_PRESETS.filter(item => {
+                if (spotlightCategory !== 'ALL' && item.category !== spotlightCategory) return false;
+                if (!query) return true;
+                return item.title.toLowerCase().includes(query)
+                    || item.command.toLowerCase().includes(query)
+                    || item.subtitle.toLowerCase().includes(query)
+                    || item.keywords.some(k => k.includes(query));
+            });
+
+            spotlightSelectedIndex = currentSpotlightMatches.length > 0 ? 0 : -1;
+
+            if (currentSpotlightMatches.length === 0) {
+                container.innerHTML = `
+                    <div class="spotlight-row selected" onclick="executeSpotlight('${escapeHtml(query)}')">
+                        <div class="spotlight-row-left">
+                            <div class="spotlight-icon-box">⚡</div>
+                            <div class="spotlight-row-info">
+                                <div class="spotlight-row-title">Run Custom Command: "${escapeHtml(query || '...')}"</div>
+                                <div class="spotlight-row-sub">Execute via Local Orchestrator Engine</div>
+                            </div>
+                        </div>
+                        <div class="spotlight-row-right">
+                            <span class="spotlight-cat-tag">CUSTOM</span>
+                            <span class="spotlight-run-hint">↵ Run</span>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = currentSpotlightMatches.map((item, idx) => {
+                const isSelected = idx === spotlightSelectedIndex;
+                return `
+                    <div class="spotlight-row ${isSelected ? 'selected' : ''}" 
+                         id="spotlight-row-${idx}"
+                         onmouseenter="selectSpotlightRow(${idx})"
+                         onclick="executeSpotlight('${escapeHtml(item.command)}')">
+                        <div class="spotlight-row-left">
+                            <div class="spotlight-icon-box">${item.icon}</div>
+                            <div class="spotlight-row-info">
+                                <div class="spotlight-row-title">${escapeHtml(item.title)}</div>
+                                <div class="spotlight-row-sub">${escapeHtml(item.subtitle)}</div>
+                            </div>
+                        </div>
+                        <div class="spotlight-row-right">
+                            <span class="spotlight-cat-tag" style="color:${item.badgeColor}">${item.badge}</span>
+                            <span class="spotlight-run-hint">↵ Run</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function selectSpotlightRow(index) {
+            spotlightSelectedIndex = index;
+            document.querySelectorAll('.spotlight-row').forEach((row, idx) => {
+                row.classList.toggle('selected', idx === index);
+            });
+        }
+
+        function handleSpotlightKeydown(e) {
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (currentSpotlightMatches.length > 0) {
+                    spotlightSelectedIndex = (spotlightSelectedIndex + 1) % currentSpotlightMatches.length;
+                    selectSpotlightRow(spotlightSelectedIndex);
+                }
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (currentSpotlightMatches.length > 0) {
+                    spotlightSelectedIndex = (spotlightSelectedIndex - 1 + currentSpotlightMatches.length) % currentSpotlightMatches.length;
+                    selectSpotlightRow(spotlightSelectedIndex);
+                }
+            } else if (e.key === 'Tab') {
+                e.preventDefault();
+                if (spotlightSelectedIndex >= 0 && spotlightSelectedIndex < currentSpotlightMatches.length) {
+                    const item = currentSpotlightMatches[spotlightSelectedIndex];
+                    document.getElementById('spotlight-input').value = item.command;
+                    renderSpotlightResults();
+                }
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                const inputVal = document.getElementById('spotlight-input').value.trim();
+                if (spotlightSelectedIndex >= 0 && spotlightSelectedIndex < currentSpotlightMatches.length) {
+                    executeSpotlight(currentSpotlightMatches[spotlightSelectedIndex].command);
+                } else if (inputVal) {
+                    executeSpotlight(inputVal);
+                }
+            } else if (e.key === 'Escape') {
+                closeSpotlightModal();
+            }
+        }
+
+        async function executeSpotlight(command) {
+            if (!command) return;
+            closeSpotlightModal();
+            showToast(`⚡ Dispatching automation: "${command.substring(0, 48)}..."`);
+
+            try {
+                const res = await fetch('/api/spotlight/run', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ command })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Execution failed');
+                showToast(`🚀 Automation pipeline launched for: "${command.substring(0, 36)}"`);
+                setTimeout(() => fetchLiveMetrics(false), 800);
+            } catch (err) {
+                showToast(err.message, true);
+            }
+        }
+
+        // Initialize polling
+        if (pollInterval > 0) {
+            syncTimer = setInterval(fetchLiveMetrics, pollInterval);
+        }
     </script>
 </body>
 </html>

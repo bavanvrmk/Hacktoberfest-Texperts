@@ -3,9 +3,11 @@ import os
 from datetime import datetime
 
 DB_PATH = os.path.join(os.path.dirname(__file__), '..', '..', 'logs', 'execution_logs.db')
+_db_ready = False
 
 def init_db():
     """Initializes the SQLite database schema to log tasks and execution times."""
+    global _db_ready
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     
     conn = sqlite3.connect(DB_PATH)
@@ -27,7 +29,9 @@ def init_db():
     
     conn.commit()
     conn.close()
-    print(f"Database initialized at {DB_PATH}")
+    if not _db_ready:
+        print(f"Database initialized at {DB_PATH}")
+        _db_ready = True
 
 def log_task_start(task_name):
     """Logs the start of a task and returns the task ID."""

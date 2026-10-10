@@ -2,6 +2,7 @@
 Turn a natural-language command into an ordered list of automation steps.
 """
 
+import json
 import re
 
 from core.windows_launcher import classify_command
@@ -10,17 +11,43 @@ from core.windows_launcher import classify_command
 _SPLIT = re.compile(r"\s+(?:and then|then)\s+|\s+and\s+", re.IGNORECASE)
 _CLOSE = re.compile(r"^(?:please\s+)?(?:close|quit|exit)\s+(?:the\s+)?(.+)$", re.IGNORECASE)
 _TYPE = re.compile(r"^(?:please\s+)?type\s+[\"']?(.*?)[\"']?$", re.IGNORECASE)
+_WRITE = re.compile(r"^(?:please\s+)?(?:write|writa|compose|draft)\s+(.+)$", re.IGNORECASE)
+_CREATE_TEXT = re.compile(r"create\s+(?:a\s+)?(?:new\s+)?text\s+file", re.IGNORECASE)
+_UI_TARGET = re.compile(r"\b(tab|button|menu|icon|checkbox)\b", re.IGNORECASE)
 _HOTKEY = re.compile(r"^(?:please\s+)?(?:press|hit)\s+(.+)$", re.IGNORECASE)
 _GOTO = re.compile(r"^(?:please\s+)?(?:go to|visit|browse|navigate to)\s+(.+)$", re.IGNORECASE)
 _CLICK = re.compile(r"^(?:please\s+)?(?:click|tap|select)\s+(?:on\s+)?(?:the\s+)?(.+)$", re.IGNORECASE)
 _PLAY = re.compile(r"^(?:please\s+)?play\s+(.+)$", re.IGNORECASE)
 _RERUN = re.compile(r"^(?:please\s+)?(?:rerun|run workflow)\s+(.+)$", re.IGNORECASE)
+_SEND_EMAIL = re.compile(
+    r"^(?:please\s+)?(?:send|compose|draft|write)\s+(?:an?\s+)?(?:email|mail|message)\s+"
+    r"(?:using\s+(?:outlook|gmail|mail)\s+)?"
+    r"(?:to\s+)?(\S+@\S+\.\S+)\s*(.*?)$",
+    re.IGNORECASE,
+)
+_EMAIL_ADDR = re.compile(r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}")
+_APP_ALIASES = {
+    "vscode": "Visual Studio Code",
+    "vscoed": "Visual Studio Code",
+    "vs code": "Visual Studio Code",
+    "visual studio code": "Visual Studio Code",
+    "code": "Visual Studio Code",
+    "whatsapp": "WhatsApp",
+    "whats app": "WhatsApp",
+    "watsapp": "WhatsApp",
+}
+_ALLOWED = {
+    "launch_app", "open_url", "open_file", "close_app",
+    "click", "type", "hotkey", "wait", "scroll",
+    "generate", "rerun", "send_email", "verify_visual",
+    "summarize_screen"
+}
 
 
 def plan_command(command: str):
     """
     Return a list of steps: {"action": str, "target": str}.
-    Actions: launch_app, open_file, close_app, type, hotkey, click, rerun.
+    Actions: launch_app, open_file, close_app, type, hotkey, click, rerun, summarize_screen.
     """
     text = " ".join((command or "").strip().split())
     if not text:
@@ -29,6 +56,23 @@ def plan_command(command: str):
     rerun = _RERUN.match(text)
     if rerun:
         return [{"action": "rerun", "target": rerun.group(1).strip()}]
+
+    # Direct screen summarization intent
+    if any(k in text.lower() for k in ("summarize screen", "read screen", "summarize contents on screen", "read contents on the screen", "what is on screen", "what's on screen", "screen summary")):
+        return [{"action": "summarize_screen", "target": text, "description": "Read visible screen contents and provide AI summary"}]
+
+    # Email commands should NOT be split on "and" — the full sentence is the intent
+    email = _SEND_EMAIL.match(text)
+    if email:
+        return [{"action": "send_email", "target": text}]
+
+    # Also catch any command containing an email address + "send/email/mail"
+    if _EMAIL_ADDR.search(text) and re.search(r"\b(?:send|email|mail|message)\b", text, re.IGNORECASE):
+        return [{"action": "send_email", "target": text}]
+
+    alias = _APP_ALIASES.get(text.lower())
+    if alias:
+        return [{"action": "launch_app", "target": alias}]
 
     steps = []
     for clause in _SPLIT.split(text):
@@ -39,10 +83,114 @@ def plan_command(command: str):
     return steps
 
 
+def needs_model(command: str, steps) -> bool:
+    """
+    True whenever the user's input expresses a workflow, conversation,
+    multi-step goal, or complex intent that requires model reasoning.
+    """
+    text = " ".join((command or "").strip().split())
+    if not text:
+        return False
+    words = text.split()
+
+    # Fast path ONLY for single, atomic, unambiguous system commands
+    # e.g., "calc", "notepad", "launch task manager", "close chrome", "ctrl+c"
+    if len(words) <= 3 and len(steps) == 1 and steps[0]["action"] in ("launch_app", "open_file", "close_app", "hotkey", "rerun"):
+        if not any(w in text.lower() for w in ("and", "then", "search", "send", "type", "summarize", "read", "chat", "msg", "click", "find")):
+            return False
+
+    # Any natural language goal or multi-step command MUST be processed semantically by the model
+    return True
+
+
+def compile_customer_intent_workflow(command: str, complete_fn) -> list:
+    """
+    Compiles ANY customer intent into an executable structured JSON workflow
+    using the local LLM model without taking conversational text literally.
+    """
+    prompt = (
+        "You are an Autonomous Desktop Automation Agent compiler.\n"
+        f"Customer Request: \"{command}\"\n\n"
+        "Deconstruct this customer intent into an ordered, executable JSON list of steps.\n"
+        "Allowed action types:\n"
+        "- launch_app: target is app name (e.g. 'WhatsApp', 'Notepad', 'Google Chrome')\n"
+        "- open_url: target is a full URL or web service\n"
+        "- click: target is description of UI element to locate visually and click (e.g. 'Search bar', 'Contact')\n"
+        "- type: target is text string to type (e.g. 'pranav cceb', 'hi')\n"
+        "- hotkey: target is keyboard shortcut (e.g. 'enter', 'ctrl+f', 'esc')\n"
+        "- wait: target is seconds to wait for UI rendering (e.g. '2.0', '1.0')\n"
+        "- summarize_screen: target is what to read and summarize on the visible screen\n"
+        "- send_email: target is the full email instruction\n"
+        "- close_app: target is app name to close\n\n"
+        "Guidelines:\n"
+        "1. For messaging apps (WhatsApp, Slack): launch_app -> wait 2.0s -> click search bar -> type contact name -> hotkey enter -> wait 1.0s -> type message -> hotkey enter.\n"
+        "2. For screen reading/summarization: action is 'summarize_screen'.\n"
+        "3. Output strictly valid JSON only with no markdown backticks:\n"
+        "{\"workflow_name\": \"...\", \"steps\": [{\"action\": \"...\", \"target\": \"...\", \"description\": \"...\"}]}"
+    )
+    try:
+        raw = complete_fn(prompt)
+        # Clean any markdown code fences if model returned them
+        clean = re.sub(r"```json\s*", "", raw or "")
+        clean = re.sub(r"```\s*$", "", clean)
+        match = re.search(r"\{.*\}", clean, re.DOTALL)
+        if match:
+            data = json.loads(match.group(0))
+            steps = []
+            for item in data.get("steps") or []:
+                action = str(item.get("action", "")).strip()
+                target = str(item.get("target", "")).strip()
+                desc = str(item.get("description", f"{action} {target}")).strip()
+                if action in _ALLOWED and target:
+                    steps.append({"action": action, "target": target, "description": desc})
+            if steps:
+                return steps
+    except Exception as exc:
+        print(f"[Planner] compile_customer_intent_workflow error: {exc}")
+
+    # Fallback smart heuristics for conversational intents
+    cmd_lower = command.lower()
+    if "whatsapp" in cmd_lower and any(w in cmd_lower for w in ("search", "send", "msg", "message", "hi", "hello")):
+        # Extract contact and message
+        m_contact = re.search(r"search for\s+(.+?)(?:\s+(?:and\s+)?send|\s*$)", command, re.IGNORECASE)
+        m_msg = re.search(r"send\s+(?:message\s+)?[\"']?([^\"'\n]+)[\"']?$", command, re.IGNORECASE)
+        contact = m_contact.group(1).strip() if m_contact else "search query"
+        msg = m_msg.group(1).strip() if m_msg else "hi"
+        return [
+            {"action": "launch_app", "target": "WhatsApp", "description": "Launch WhatsApp application"},
+            {"action": "wait", "target": "2.0", "description": "Wait for WhatsApp to load"},
+            {"action": "click", "target": "Search bar", "description": "Click search bar to find contact"},
+            {"action": "type", "target": contact, "description": f"Type contact name '{contact}'"},
+            {"action": "hotkey", "target": "enter", "description": "Open conversation with contact"},
+            {"action": "wait", "target": "1.0", "description": "Wait for chat to open"},
+            {"action": "type", "target": msg, "description": f"Type message '{msg}'"},
+            {"action": "hotkey", "target": "enter", "description": "Send message"}
+        ]
+    elif any(k in cmd_lower for k in ("summarize screen", "read screen", "read contents on the screen")):
+        return [{"action": "summarize_screen", "target": command, "description": "Read screen and generate AI summary"}]
+
+    return plan_command(command)
+
+
+def plan_with_model(command: str, complete):
+    """Ask the local model for workflow steps. complete(prompt) returns text."""
+    return compile_customer_intent_workflow(command, complete)
+
+
 def _plan_clause(clause: str):
+    if _CREATE_TEXT.search(clause):
+        return [{"action": "launch_app", "target": "Notepad"}]
+
+    written = _WRITE.match(clause)
+    if written:
+        return [{"action": "generate", "target": written.group(1).strip()}]
+
     closed = _CLOSE.match(clause)
     if closed:
-        return [{"action": "close_app", "target": closed.group(1).strip()}]
+        target = closed.group(1).strip()
+        if _UI_TARGET.search(clause):
+            return [{"action": "click", "target": f"the close control for the {target}"}]
+        return [{"action": "close_app", "target": target}]
 
     typed = _TYPE.match(clause)
     if typed:

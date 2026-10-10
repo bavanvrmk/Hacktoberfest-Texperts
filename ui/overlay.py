@@ -94,7 +94,7 @@ class AROverlay(tk.Toplevel):
                         data.get("x2", 0),
                         data.get("y2", 0),
                         duration=data.get("duration", 2.5),
-                        color=data.get("color", "#06b6d4"),
+                        color=data.get("color", "#f97316"),
                         label=data.get("label"),
                     )
                 elif kind == "ping":
@@ -108,7 +108,7 @@ class AROverlay(tk.Toplevel):
         except Exception:
             pass
 
-    def draw_glowing_box(self, x1, y1, x2, y2, duration=2.5, color="#06b6d4", label=None):
+    def draw_glowing_box(self, x1, y1, x2, y2, duration=2.5, color="#f97316", label=None):
         """
         Draws a premium animated AR-style bounding box with animated corners,
         a pulsating glow ring, and an optional label tag.
@@ -171,7 +171,7 @@ class AROverlay(tk.Toplevel):
         self.bounding_boxes[box_id] = items
         threading.Thread(target=self._pulse_and_remove, args=(box_id, duration, color), daemon=True).start()
 
-    def draw_click_ping(self, x, y, color="#38bdf8"):
+    def draw_click_ping(self, x, y, color="#f97316"):
         """Brief ring at the click point so action events are visible on the overlay."""
         x, y = int(x), int(y)
         items = []
@@ -206,7 +206,7 @@ def show_overlay():
 
     def mock_coordinates():
         time.sleep(0.8)
-        app._ui_events.put(("draw", {"x1": 150, "y1": 120, "x2": 400, "y2": 220, "duration": 4.0, "color": "#06b6d4", "label": "Target: Submit Button"}))
+        app._ui_events.put(("draw", {"x1": 150, "y1": 120, "x2": 400, "y2": 220, "duration": 4.0, "color": "#f97316", "label": "Target: Submit Button"}))
         time.sleep(3)
         app._ui_events.put(("draw", {"x1": 550, "y1": 350, "x2": 750, "y2": 410, "duration": 3.0, "color": "#a855f7", "label": "Target: Input Field"}))
         time.sleep(2)

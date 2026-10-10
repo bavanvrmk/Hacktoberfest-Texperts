@@ -46,8 +46,8 @@ class WorkflowManager:
     def __init__(self):
         init_workflow_tables()
 
-    def save(self, command: str):
-        steps = plan_command(command)
+    def save(self, command: str, steps=None):
+        steps = steps or plan_command(command)
         if not steps:
             raise RuntimeError("The command did not contain anything to automate.")
         now = datetime.now().isoformat(timespec="seconds")
@@ -133,7 +133,7 @@ class WorkflowManager:
         conn.close()
         return result
 
-    def execute(self, workflow_id: int, handlers: dict):
+    def execute(self, workflow_id: int, handlers: dict, visual_thinker=None):
         workflow = self.get(workflow_id)
         if not workflow:
             raise RuntimeError(f"Workflow {workflow_id} does not exist.")
@@ -153,7 +153,7 @@ class WorkflowManager:
                     found = self.find(step["target"])
                     if not found:
                         raise RuntimeError(f"No saved workflow matches '{step['target']}'.")
-                    detail = self.execute(found["id"], handlers)
+                    detail = self.execute(found["id"], handlers, visual_thinker=visual_thinker)
                 else:
                     handler = handlers.get(action)
                     if handler is None:
@@ -162,6 +162,14 @@ class WorkflowManager:
                 self._set_step(step["id"], "completed", str(detail))
                 summaries.append(f"{label} ({detail})")
                 print(f"[Workflow] {label} -> {detail}")
+
+                # Multi-screenshot visual thinking loop between steps
+                if visual_thinker:
+                    try:
+                        visual_thinker(step, step["position"], total)
+                    except Exception as th_err:
+                        print(f"[Workflow] Visual thinker note: {th_err}")
+
             except Exception as exc:
                 self._set_step(step["id"], "failed", str(exc))
                 self._set_workflow_status(workflow_id, "failed")

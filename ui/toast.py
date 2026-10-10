@@ -19,33 +19,33 @@ from PyQt5.QtGui import QColor, QFont
 PALETTES = {
     "success": {
         "border":   "#10b981",
-        "bg":       "#061811",
+        "bg":       "#121215",
         "title":    "#34d399",
         "badge_bg": "#064e3b",
         "badge_fg": "#6ee7b7",
         "icon":     "✓",
     },
     "healing": {
-        "border":   "#f59e0b",
-        "bg":       "#1a1200",
-        "title":    "#fbbf24",
-        "badge_bg": "#78350f",
-        "badge_fg": "#fde68a",
+        "border":   "#f97316",
+        "bg":       "#121215",
+        "title":    "#fb923c",
+        "badge_bg": "#431407",
+        "badge_fg": "#fed7aa",
         "icon":     "⚡",
     },
     "info": {
-        "border":   "#38bdf8",
-        "bg":       "#04111e",
-        "title":    "#60a5fa",
-        "badge_bg": "#1e3a8a",
-        "badge_fg": "#93c5fd",
-        "icon":     "ℹ",
+        "border":   "#f97316",
+        "bg":       "#121215",
+        "title":    "#fb923c",
+        "badge_bg": "#431407",
+        "badge_fg": "#fed7aa",
+        "icon":     "⚡",
     },
     "error": {
         "border":   "#ef4444",
-        "bg":       "#1a0404",
+        "bg":       "#121215",
         "title":    "#f87171",
-        "badge_bg": "#7f1d1d",
+        "badge_bg": "#450a0a",
         "badge_fg": "#fca5a5",
         "icon":     "✕",
     },
@@ -96,7 +96,7 @@ class ToastWidget(QWidget):
                 background: qlineargradient(
                     x1:0, y1:0, x2:1, y2:1,
                     stop:0 {theme['bg']},
-                    stop:1 #0f172a
+                    stop:1 #18181b
                 );
                 border: 1.5px solid {theme['border']};
                 border-radius: 14px;
@@ -146,7 +146,7 @@ class ToastWidget(QWidget):
         # Message
         msg_lbl = QLabel(message)
         msg_lbl.setFont(QFont("Segoe UI", 11))
-        msg_lbl.setStyleSheet("color: #cbd5e1; background: transparent;")
+        msg_lbl.setStyleSheet("color: #d4d4d8; background: transparent;")
         msg_lbl.setWordWrap(True)
         layout.addWidget(msg_lbl)
 
@@ -158,7 +158,7 @@ class ToastWidget(QWidget):
         self.timer_bar.setFixedHeight(3)
         self.timer_bar.setStyleSheet(f"""
             QProgressBar {{
-                background: #1e293b;
+                background: #27272a;
                 border-radius: 2px;
                 border: none;
             }}
