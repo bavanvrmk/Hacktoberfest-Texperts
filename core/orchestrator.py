@@ -51,6 +51,22 @@ class Orchestrator:
         if command:
             threading.Thread(target=self.run_pipeline, args=(command,), daemon=True).start()
 
+    def _get_handlers(self):
+        return {
+            "launch_app": lambda target: launch_app(target, llm_client=self.llm_client),
+            "open_url": self.open_web_url,
+            "open_file": open_file,
+            "close_app": close_app,
+            "type": type_text,
+            "hotkey": press_keys,
+            "wait": self.wait_seconds,
+            "scroll": self.scroll_screen,
+            "click": self.ground_and_click,
+            "generate": self.generate_and_type,
+            "send_email": self.send_and_log_email,
+            "summarize_screen": self.summarize_screen,
+        }
+
     def run_pipeline(self, target_description: str):
         """
         Executes the complete 7-step autonomous automation pipeline.
@@ -75,20 +91,11 @@ class Orchestrator:
                     "progress": 0.1,
                 })
                 self._last_screenshot = None
-                notes = self.workflows.execute(workflow_id, {
-                    "launch_app": lambda target: launch_app(target, llm_client=self.llm_client),
-                    "open_url": self.open_web_url,
-                    "open_file": open_file,
-                    "close_app": close_app,
-                    "type": type_text,
-                    "hotkey": press_keys,
-                    "wait": self.wait_seconds,
-                    "scroll": self.scroll_screen,
-                    "click": self.ground_and_click,
-                    "generate": self.generate_and_type,
-                    "send_email": self.send_and_log_email,
-                    "summarize_screen": self.summarize_screen,
-                }, visual_thinker=self.think_multi_screenshot)
+                notes = self.workflows.execute(
+                    workflow_id,
+                    self._get_handlers(),
+                    visual_thinker=self.think_multi_screenshot
+                )
                 self._finish_task(task_id, start_time, target_description, notes)
 
             except Exception as e:
@@ -97,6 +104,45 @@ class Orchestrator:
                 event_bus.emit(EVENT_TASK_FAILED, {
                     "error": str(e)
                 })
+
+    def run_workflow_id(self, workflow_id: int):
+        """
+        Executes a pre-saved workflow directly using its exact saved steps.
+        Does not overwrite or re-parse the workflow.
+        """
+        with self._lock:
+            workflow = self.workflows.get(workflow_id)
+            if not workflow:
+                raise RuntimeError(f"Workflow #{workflow_id} not found.")
+
+            target_description = workflow.get("name") or workflow.get("command")
+            print(f"\n=======================================================")
+            print(f">> [Orchestrator] Running Saved Routine #{workflow_id}: '{target_description}'")
+            print(f"=======================================================")
+
+            task_id, start_time = log_task_start(task_name=f"Routine #{workflow_id}: {target_description}")
+            try:
+                plan = " → ".join(
+                    f"{step['action'].replace('_', ' ')} {step.get('target', '')}".strip()
+                    for step in workflow.get("steps", [])
+                )
+                event_bus.emit(EVENT_PROGRESS, {
+                    "step": f"Routine #{workflow_id}: {plan}",
+                    "progress": 0.05,
+                })
+                self._last_screenshot = None
+                notes = self.workflows.execute(
+                    workflow_id,
+                    self._get_handlers(),
+                    visual_thinker=self.think_multi_screenshot
+                )
+                self._finish_task(task_id, start_time, target_description, notes)
+                return notes
+            except Exception as e:
+                print(f"[ERROR] [Orchestrator] Routine #{workflow_id} execution error: {e}")
+                log_task_end(task_id, start_time, cloud_cost_saved_usd=0.0, notes=f"Failed: {e}")
+                event_bus.emit(EVENT_TASK_FAILED, {"error": str(e)})
+                raise
 
     def _understand(self, command: str):
         """Use the local model when the command is not an obvious click, launch, or file open."""

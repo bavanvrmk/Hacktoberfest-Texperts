@@ -1,15 +1,15 @@
 """
-ui/spotlight.py — Luxury Black, Gray & Orange Autonomous Command Palette
+ui/spotlight.py — Neo-Brutalist Autonomous Command Palette
 Built for Hacktoberfest Hack Day — Coimbatore 2026.
 Features:
-- True rounded floating window with zero rectangular edge artifacts (-transparentcolor)
-- High-quality animated sweeping Orange Glowbar beam with sine-eased gradient pulse
-- Professionally graded Black, Zinc-Gray, and Electric Orange (#f97316) design system
+- Authentic Neo-Brutalist design language matching the yellow & cream design system
+- Heavy 3px solid black borders and high-contrast typography
+- Smooth open and close sliding fade animations
+- Themed status header with retro brutalist pills (replacing generic loading glowbar)
 - Keyboard-first navigation (Up/Down arrow nav, Tab auto-fill, Enter execute, Esc close)
-- Curated presets including Outlook COM automation for evaluator demos
+- Curated presets including WhatsApp 9-step automation, screen reading, and Outlook feedback
 - Real-time search filtering & category pills
-- Multi-stage execution telemetry drawer with stopwatch timer and orange shimmer bar
-- Floating HUD toast with live ROI savings badge
+- Multi-stage execution telemetry drawer with stopwatch timer and visual thinking notes
 """
 
 import sys
@@ -17,7 +17,6 @@ import os
 import queue
 import threading
 import time
-import math
 import customtkinter as ctk
 import keyboard
 
@@ -38,33 +37,28 @@ except ImportError:
     HAS_EVENT_BUS = False
 
 
-# ─── Design Tokens: Professionally Graded Black, Gray & Orange ───
-TRANSPARENT_KEY = "#000001"  # Chroma key for true rounded frameless window on Windows
+# ─── Neo-Brutalist Design Tokens ─────────────────────────────────
+TRANSPARENT_KEY = "#000001"  # Chroma key for rounded frameless window on Windows
 
-BG_CANVAS       = "#09090b"  # Deep obsidian black (Zinc 950)
-BG_CARD         = "#121215"  # Luxury dark graphite card surface
-BG_ENTRY        = "#18181b"  # Refined zinc-900 input field
-BG_ROW          = "#161619"  # Elevated charcoal item row
-BG_ROW_HOVER    = "#222228"  # Warm charcoal hover
-BG_ROW_ACTIVE   = "#2a2725"  # Active selection with warm dark amber tint
+BG_CANVAS       = "#FFFDF0"  # Warm ivory / cream base
+BG_CARD         = "#FFFDF5"  # Warm brutalist card surface
+BG_ENTRY        = "#FFFFFF"  # Crisp white input surface
+BG_ROW          = "#FFFFFF"  # Default item card row
+BG_ROW_HOVER    = "#FFF9E6"  # Light sunshine cream hover
+BG_ROW_ACTIVE   = "#FFE600"  # Vibrant sunshine yellow selected state
 
-BORDER_IDLE     = "#27272a"  # Subtle zinc-800 border
-BORDER_ORANGE   = "#f97316"  # Electric Sunset Orange
-BORDER_HOT      = "#ea580c"  # Deep burnished orange
+BORDER_BLACK    = "#000000"  # Solid pitch-black brutalist border
+BORDER_WIDTH    = 3          # Heavy 3px brutalist border
 
-ORANGE_HOT      = "#ea580c"  # Deep fiery orange
-ORANGE_MAIN     = "#f97316"  # Electric Orange primary accent
-ORANGE_GLOW     = "#fb923c"  # Luminous orange beam
-ORANGE_SOFT     = "#fdba74"  # Highlight flare
-ORANGE_PALE     = "#fed7aa"  # Core white-hot beam center
-ORANGE_BADGE_BG = "#381708"  # Subtle warm dark badge background
-ORANGE_BADGE_BD = "#7c2d12"  # Muted orange badge border
+YELLOW_ACCENT   = "#FFE600"  # Signature Sunshine Mustard Yellow
+CORAL_ACCENT    = "#FF5757"  # Coral Red accent
+MINT_ACCENT     = "#22C55E"  # Mint Green status accent
+SKY_ACCENT      = "#38BDF8"  # Sky Blue accent
+LAVENDER_ACCENT = "#C084FC"  # Lavender pill accent
 
-TEXT_PRIMARY    = "#fafafa"  # Pure crisp white (100% contrast)
-TEXT_SECONDARY  = "#d4d4d8"  # Clean neutral gray (Zinc 300)
-TEXT_MUTED      = "#71717a"  # Refined zinc muted (Zinc 500)
-TEXT_DIM        = "#52525b"  # Deep zinc faint (Zinc 600)
-TEXT_ORANGE     = "#fb923c"  # Luminous orange text
+TEXT_MAIN       = "#000000"  # 100% black text for maximum brutalist contrast
+TEXT_MUTED      = "#444444"  # Dark charcoal secondary
+TEXT_DIM        = "#666666"  # Faint label text
 
 
 # ─── Curated Actions & Automation Presets ─────────────────────────
@@ -77,7 +71,7 @@ DEFAULT_ACTIONS = [
         "command": "open whatsapp and search for pranav cceb and send hi",
         "subtitle": "Search contact 'pranav cceb' & dispatch message via WhatsApp",
         "badge": "WhatsApp",
-        "badge_color": "#25d366",
+        "badge_color": MINT_ACCENT,
         "keywords": ["whatsapp", "pranav", "chat", "message", "send", "hi", "social"],
     },
     {
@@ -88,7 +82,7 @@ DEFAULT_ACTIONS = [
         "command": "read contents on the screen and summarize",
         "subtitle": "Local Qwen2.5-VL Vision reads active windows & documents",
         "badge": "Vision AI",
-        "badge_color": ORANGE_MAIN,
+        "badge_color": YELLOW_ACCENT,
         "keywords": ["summarize", "read", "screen", "summary", "vision", "contents", "ocr"],
     },
     {
@@ -99,7 +93,7 @@ DEFAULT_ACTIONS = [
         "command": "Open Twitter",
         "subtitle": "Launches installed Twitter app or opens x.com",
         "badge": "Social App",
-        "badge_color": "#38bdf8",
+        "badge_color": SKY_ACCENT,
         "keywords": ["twitter", "x", "social", "tweet", "feed"],
     },
     {
@@ -110,7 +104,7 @@ DEFAULT_ACTIONS = [
         "command": "Open ChatGPT",
         "subtitle": "Launches ChatGPT or opens chatgpt.com",
         "badge": "AI Engine",
-        "badge_color": "#10b981",
+        "badge_color": MINT_ACCENT,
         "keywords": ["chatgpt", "openai", "gpt", "ask", "ai", "search"],
     },
     {
@@ -121,7 +115,7 @@ DEFAULT_ACTIONS = [
         "command": "Send an email using outlook to jp_vedaj@cb.amrita.edu about how good my hackathon demo was",
         "subtitle": "To: jp_vedaj@cb.amrita.edu · Topic: Hackathon Demo Feedback",
         "badge": "Outlook COM",
-        "badge_color": ORANGE_MAIN,
+        "badge_color": YELLOW_ACCENT,
         "keywords": ["email", "outlook", "jp_vedaj", "demo", "amrita", "send", "mail", "hackathon"],
     },
     {
@@ -132,7 +126,7 @@ DEFAULT_ACTIONS = [
         "command": "Open Chrome and navigate to http://127.0.0.1:8000",
         "subtitle": "Real-time Telemetry, PII Audit Logs & Cost Metrics",
         "badge": "Browser",
-        "badge_color": ORANGE_GLOW,
+        "badge_color": MINT_ACCENT,
         "keywords": ["roi", "dashboard", "telemetry", "chrome", "cost", "metrics", "financial"],
     },
     {
@@ -143,7 +137,7 @@ DEFAULT_ACTIONS = [
         "command": "Launch Notepad and type hackathon notes for jury evaluation",
         "subtitle": "Process Spawning & Sandboxed Keystroke Injection",
         "badge": "Windows App",
-        "badge_color": "#f59e0b",
+        "badge_color": YELLOW_ACCENT,
         "keywords": ["notepad", "notes", "type", "presentation", "jury", "app"],
     },
     {
@@ -154,7 +148,7 @@ DEFAULT_ACTIONS = [
         "command": "Click the Save Changes button",
         "subtitle": "Local Qwen2.5-VL Object Detection & AR Projection",
         "badge": "Vision AI",
-        "badge_color": ORANGE_HOT,
+        "badge_color": CORAL_ACCENT,
         "keywords": ["click", "vision", "grounding", "button", "save", "qwen"],
     },
     {
@@ -164,39 +158,25 @@ DEFAULT_ACTIONS = [
         "title": "Inspect Desktop Performance & VRAM",
         "command": "Launch Task Manager",
         "subtitle": "Win32 Sandbox Process Monitor",
-        "badge": "Win32 Driver",
-        "badge_color": "#a1a1aa",
+        "badge": "System",
+        "badge_color": LAVENDER_ACCENT,
         "keywords": ["task", "manager", "system", "vram", "performance", "sandbox"],
-    },
-    {
-        "id": "email_quick",
-        "category": "EMAIL",
-        "icon": "📨",
-        "title": "Send Quick Email Notification",
-        "command": "Send an email using outlook to team@hackathon.org about presentation schedule",
-        "subtitle": "Direct Dispatch via Outlook COM Automation",
-        "badge": "Outlook COM",
-        "badge_color": ORANGE_MAIN,
-        "keywords": ["email", "team", "presentation", "schedule", "mail"],
     },
 ]
 
-# Apple Assistant Quick Suggestion Chips (Inspired by Siri & Google Assistant)
 SUGGESTION_CHIPS = [
-    ("💬 WhatsApp", "open whatsapp and search for pranav cceb and send hi"),
-    ("👁 Summarize", "read contents on the screen and summarize"),
-    ("🐦 Twitter", "Open Twitter"),
-    ("🤖 ChatGPT", "Open ChatGPT"),
-    ("📧 Send Email", "Send an email using outlook to jp_vedaj@cb.amrita.edu about how good my hackathon demo was"),
-    ("📝 Notes", "Launch Notepad and type hackathon notes for jury evaluation"),
-    ("🌐 Chrome", "Open Chrome and search for Hacktoberfest 2026"),
+    ("💬 WhatsApp Pranav", "open whatsapp and search for pranav cceb and send hi"),
+    ("👁 Summarize Screen", "read contents on the screen and summarize"),
+    ("📧 Outlook Evaluator", "Send an email using outlook to jp_vedaj@cb.amrita.edu about how good my hackathon demo was"),
+    ("🐦 Twitter / X", "Open Twitter"),
+    ("📊 Live ROI", "Open Chrome and navigate to http://127.0.0.1:8000"),
 ]
 
 CATEGORY_TABS = [
-    ("ALL", "⚡ All"),
+    ("ALL", "All Presets"),
+    ("APPS", "💬 Apps"),
+    ("VISION", "👁 Vision AI"),
     ("EMAIL", "📧 Email"),
-    ("APPS", "💻 Apps"),
-    ("VISION", "🖱 Vision"),
     ("TELEMETRY", "📊 ROI"),
     ("SYSTEM", "⚙ System"),
 ]
@@ -206,74 +186,90 @@ class SpotlightUI(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        # ── Window Chrome & True-Rounded Framing ──────────────────
+        # ── Window Chrome & Framing ──────────────────────────────
         self.title("Shadow Automator — Spotlight")
         self.overrideredirect(True)
         self.attributes("-topmost", True)
-        self.attributes("-alpha", 0.98)
+        self.attributes("-alpha", 0.0)
 
-        # Make root window 100% transparent so only the rounded card displays (no rectangle edges)
         if sys.platform.startswith("win"):
             try:
                 self.attributes("-transparentcolor", TRANSPARENT_KEY)
             except Exception:
                 pass
         self.configure(fg_color=TRANSPARENT_KEY)
-        ctk.set_appearance_mode("dark")
+        ctk.set_appearance_mode("light")
 
         self._W = 840
-        self._H_EXPANDED = 496
-        self._H_COMPACT  = 84
-        self._H_EXEC     = 250
+        self._H_EXPANDED = 510
+        self._H_EXEC     = 260
+        self._current_h  = self._H_EXPANDED
 
         sw = self.winfo_screenwidth()
         sh = self.winfo_screenheight()
         self._pos_x = int(sw / 2 - self._W / 2)
-        self._pos_y = int(sh * 0.22)
+        self._pos_y = int(sh * 0.20)
         self.geometry(f"{self._W}x{self._H_EXPANDED}+{self._pos_x}+{self._pos_y}")
 
-        # ── Main Floating Rounded Glass Card (Apple Squircle Aesthetics) ──
+        # ── Main Floating Neo-Brutalist Card ──────────────────────
         self.card = ctk.CTkFrame(
             self,
             fg_color=BG_CARD,
-            corner_radius=28,
-            border_width=2,
-            border_color=BORDER_ORANGE,
+            corner_radius=22,
+            border_width=BORDER_WIDTH,
+            border_color=BORDER_BLACK,
         )
         self.card.pack(fill="both", expand=True, padx=6, pady=6)
 
-        # ── High-Quality Animated Orange Glowbar (Top Edge) ────────
-        self.glowbar_canvas = ctk.CTkCanvas(
-            self.card,
-            height=4,
-            bg=BG_CARD,
-            highlightthickness=0,
-        )
-        self.glowbar_canvas.pack(fill="x", padx=26, pady=(10, 2))
+        # ── Themed Neo-Brutalist Top Status Header ────────────────
+        self.top_header = ctk.CTkFrame(self.card, fg_color="transparent", height=32)
+        self.top_header.pack(fill="x", padx=20, pady=(12, 6))
 
-        # ── Apple Capsule Search Bar (Inspired by ChatGPT macOS / Apple Intelligence) ──
+        self.title_badge = ctk.CTkLabel(
+            self.top_header,
+            text="★ SHADOW SPOTLIGHT ★",
+            font=("Segoe UI", 12, "bold"),
+            text_color=TEXT_MAIN,
+        )
+        self.title_badge.pack(side="left")
+
+        self.status_pill = ctk.CTkLabel(
+            self.top_header,
+            text="⚡ SYSTEM READY",
+            font=("Segoe UI", 11, "bold"),
+            text_color=TEXT_MAIN,
+            fg_color=YELLOW_ACCENT,
+            corner_radius=8,
+            padx=10,
+            pady=2,
+        )
+        self.status_pill.pack(side="right")
+
+        # ── Neo-Brutalist Search Capsule Bar ──────────────────────
         self.capsule_bar = ctk.CTkFrame(
             self.card,
-            fg_color="#18181c",
-            corner_radius=24,
-            height=48,
-            border_width=1,
-            border_color="#27272a",
+            fg_color=BG_ENTRY,
+            corner_radius=16,
+            height=50,
+            border_width=2,
+            border_color=BORDER_BLACK,
         )
-        self.capsule_bar.pack(fill="x", padx=16, pady=(4, 6))
+        self.capsule_bar.pack(fill="x", padx=16, pady=(2, 8))
         self.capsule_bar.pack_propagate(False)
 
-        # Left (+) Action Menu Pill Button
+        # Left (+) Action Menu Pill Button (From Reference Image)
         self.plus_btn = ctk.CTkButton(
             self.capsule_bar,
             text="+",
-            width=32,
-            height=32,
-            corner_radius=16,
-            font=("Segoe UI", 16, "bold"),
-            fg_color="#222228",
-            hover_color="#2c2c34",
-            text_color="#e4e4e7",
+            width=34,
+            height=34,
+            corner_radius=17,
+            font=("Segoe UI", 18, "bold"),
+            fg_color=YELLOW_ACCENT,
+            hover_color="#FACC15",
+            text_color=TEXT_MAIN,
+            border_width=2,
+            border_color=BORDER_BLACK,
             command=self._on_plus_click,
         )
         self.plus_btn.pack(side="left", padx=(8, 8))
@@ -283,13 +279,13 @@ class SpotlightUI(ctk.CTk):
         self.search_entry = ctk.CTkEntry(
             self.capsule_bar,
             textvariable=self.search_var,
-            height=40,
-            font=("Segoe UI", 15),
-            placeholder_text="Ask anything, describe task, or launch app…",
+            height=42,
+            font=("Segoe UI", 15, "bold"),
+            placeholder_text="Ask anything, describe task, or launch routine…",
             placeholder_text_color=TEXT_MUTED,
             border_width=0,
             fg_color="transparent",
-            text_color=TEXT_PRIMARY,
+            text_color=TEXT_MAIN,
         )
         self.search_entry.pack(side="left", fill="x", expand=True, padx=(0, 6))
 
@@ -297,66 +293,56 @@ class SpotlightUI(ctk.CTk):
         self.clear_btn = ctk.CTkButton(
             self.capsule_bar,
             text="✕",
-            width=24,
-            height=24,
+            width=26,
+            height=26,
+            corner_radius=13,
             font=("Segoe UI", 11, "bold"),
-            fg_color="transparent",
-            hover_color="#222228",
-            text_color=TEXT_MUTED,
+            fg_color="#F3F4F6",
+            border_width=1,
+            border_color=BORDER_BLACK,
+            hover_color="#E5E7EB",
+            text_color=TEXT_MAIN,
             command=self._clear_search,
         )
 
-        # "🧠 Think" Toggle Button (Image 1 reference)
+        # "🧠 Think" Toggle Button
         self.think_mode = True
         self.think_btn = ctk.CTkButton(
             self.capsule_bar,
             text="🧠 Think",
             width=76,
-            height=30,
-            corner_radius=15,
+            height=32,
+            corner_radius=12,
             font=("Segoe UI", 11, "bold"),
-            fg_color=ORANGE_BADGE_BG,
-            border_width=1,
-            border_color=ORANGE_HOT,
-            hover_color="#451a08",
-            text_color=ORANGE_PALE,
+            fg_color=YELLOW_ACCENT,
+            border_width=2,
+            border_color=BORDER_BLACK,
+            hover_color="#FACC15",
+            text_color=TEXT_MAIN,
             command=self._toggle_think_mode,
         )
         self.think_btn.pack(side="right", padx=(4, 6))
 
-        # Microphone Icon Button (Image 1 reference)
-        self.mic_btn = ctk.CTkButton(
-            self.capsule_bar,
-            text="🎙",
-            width=30,
-            height=30,
-            corner_radius=15,
-            font=("Segoe UI Emoji", 13),
-            fg_color="transparent",
-            hover_color="#222228",
-            text_color=TEXT_SECONDARY,
-            command=lambda: self.search_entry.focus_set(),
-        )
-        self.mic_btn.pack(side="right", padx=(2, 2))
-
-        # Dispatch Beacon Button (Image 1 reference)
+        # Dispatch Beacon Button (⚡ Run)
         self.beacon_btn = ctk.CTkButton(
             self.capsule_bar,
             text="⚡",
-            width=34,
-            height=34,
-            corner_radius=17,
-            font=("Segoe UI Emoji", 13),
-            fg_color=ORANGE_MAIN,
-            hover_color=ORANGE_HOT,
-            text_color="#ffffff",
+            width=36,
+            height=36,
+            corner_radius=18,
+            font=("Segoe UI Emoji", 14, "bold"),
+            fg_color=YELLOW_ACCENT,
+            border_width=2,
+            border_color=BORDER_BLACK,
+            hover_color="#FACC15",
+            text_color=TEXT_MAIN,
             command=self.on_execute,
         )
         self.beacon_btn.pack(side="right", padx=(4, 8))
 
-        # ── Apple Assistant Suggestion Chips Bar (Image 2 reference) ──
+        # ── Suggestion Chips Bar ──────────────────────────────────
         self.chips_frame = ctk.CTkFrame(self.card, fg_color="transparent", height=32)
-        self.chips_frame.pack(fill="x", padx=16, pady=(0, 6))
+        self.chips_frame.pack(fill="x", padx=16, pady=(0, 8))
 
         for chip_label, chip_cmd in SUGGESTION_CHIPS:
             cbtn = ctk.CTkButton(
@@ -365,18 +351,18 @@ class SpotlightUI(ctk.CTk):
                 font=("Segoe UI", 11, "bold"),
                 height=26,
                 corner_radius=13,
-                fg_color="#18181c",
-                border_width=1,
-                border_color="#27272a",
-                hover_color="#222228",
-                text_color=TEXT_SECONDARY,
+                fg_color="#FFFFFF",
+                border_width=1.5,
+                border_color=BORDER_BLACK,
+                hover_color=YELLOW_ACCENT,
+                text_color=TEXT_MAIN,
                 command=lambda cmd=chip_cmd: self._on_chip_click(cmd),
             )
             cbtn.pack(side="left", padx=(0, 6))
 
         # ── Category Filter Bar ────────────────────────────────────
         self.filter_bar = ctk.CTkFrame(self.card, fg_color="transparent", height=30)
-        self.filter_bar.pack(fill="x", padx=18, pady=(0, 6))
+        self.filter_bar.pack(fill="x", padx=18, pady=(0, 8))
 
         self.active_category = "ALL"
         self._filter_buttons = {}
@@ -384,98 +370,92 @@ class SpotlightUI(ctk.CTk):
             btn = ctk.CTkButton(
                 self.filter_bar,
                 text=cat_label,
-                font=("Segoe UI", 11, "bold" if cat_key == "ALL" else "normal"),
+                font=("Segoe UI", 11, "bold"),
                 height=24,
                 corner_radius=12,
-                fg_color=ORANGE_BADGE_BG if cat_key == "ALL" else "transparent",
-                border_width=1 if cat_key == "ALL" else 0,
-                border_color=ORANGE_HOT if cat_key == "ALL" else BORDER_IDLE,
-                hover_color="#222228",
-                text_color=ORANGE_GLOW if cat_key == "ALL" else TEXT_MUTED,
+                fg_color=YELLOW_ACCENT if cat_key == "ALL" else "#FFFFFF",
+                border_width=1.5,
+                border_color=BORDER_BLACK,
+                hover_color=YELLOW_ACCENT,
+                text_color=TEXT_MAIN,
                 command=lambda k=cat_key: self._set_category(k),
             )
             btn.pack(side="left", padx=(0, 6))
             self._filter_buttons[cat_key] = btn
 
-        # ── Suggestions Frame (Dynamic List Container) ─────────────
+        # ── Suggestions Container ─────────────────────────────────
         self.suggestions_frame = ctk.CTkFrame(self.card, fg_color="transparent")
         self.suggestions_frame.pack(fill="both", expand=True, padx=16, pady=(2, 6))
 
         # ── Execution Telemetry Drawer (Hidden until running) ──────
         self.exec_drawer = ctk.CTkFrame(
             self.card,
-            fg_color="#0e0e11",
+            fg_color="#FFFFFF",
             corner_radius=16,
-            border_width=1,
-            border_color=ORANGE_HOT,
+            border_width=2,
+            border_color=BORDER_BLACK,
         )
 
         self.exec_header_row = ctk.CTkFrame(self.exec_drawer, fg_color="transparent")
-        self.exec_header_row.pack(fill="x", padx=16, pady=(10, 4))
+        self.exec_header_row.pack(fill="x", padx=16, pady=(12, 4))
 
         self.exec_title_lbl = ctk.CTkLabel(
             self.exec_header_row,
-            text="⚡ Executing Autonomous Pipeline…",
+            text="⚡ Executing Autonomous Routine…",
             font=("Segoe UI", 14, "bold"),
-            text_color=ORANGE_GLOW,
+            text_color=TEXT_MAIN,
         )
         self.exec_title_lbl.pack(side="left")
 
         self.exec_timer_lbl = ctk.CTkLabel(
             self.exec_header_row,
             text="⏱ 0.0s",
-            font=("JetBrains Mono", 12),
-            text_color=TEXT_MUTED,
+            font=("Segoe UI", 12, "bold"),
+            fg_color=YELLOW_ACCENT,
+            corner_radius=6,
+            padx=8,
+            pady=2,
+            text_color=TEXT_MAIN,
         )
         self.exec_timer_lbl.pack(side="right")
-
-        # Shimmer progress bar in vibrant orange
-        self.progress_bar = ctk.CTkProgressBar(
-            self.exec_drawer,
-            height=4,
-            progress_color=ORANGE_MAIN,
-            fg_color="#1f1f23",
-            mode="indeterminate",
-        )
-        self.progress_bar.pack(fill="x", padx=16, pady=(4, 6))
 
         # Step progression text
         self.exec_step_lbl = ctk.CTkLabel(
             self.exec_drawer,
-            text="🔒 Redacting PII from screenshot…",
-            font=("Segoe UI", 12),
-            text_color=TEXT_SECONDARY,
+            text="🔒 Grounding action on screen…",
+            font=("Segoe UI", 12, "bold"),
+            text_color=TEXT_MAIN,
             anchor="w",
         )
-        self.exec_step_lbl.pack(fill="x", padx=18, pady=(0, 4))
+        self.exec_step_lbl.pack(fill="x", padx=18, pady=(4, 6))
 
-        # ── Multi-Screenshot Visual Agent Reasoning Box ────────────
+        # Visual Agent Reasoning Box
         self.visual_thought_card = ctk.CTkFrame(
             self.exec_drawer,
-            fg_color="#121216",
+            fg_color="#FFFDF0",
             corner_radius=10,
-            border_width=1,
-            border_color="#27272a",
+            border_width=1.5,
+            border_color=BORDER_BLACK,
         )
-        self.visual_thought_card.pack(fill="x", padx=16, pady=(4, 6))
+        self.visual_thought_card.pack(fill="x", padx=16, pady=(4, 8))
 
         self.visual_thought_header = ctk.CTkFrame(self.visual_thought_card, fg_color="transparent")
         self.visual_thought_header.pack(fill="x", padx=12, pady=(6, 2))
 
         self.visual_thought_title = ctk.CTkLabel(
             self.visual_thought_header,
-            text="🧠 Multi-Screenshot Visual Thinking",
+            text="🧠 Visual Observation & Grounding",
             font=("Segoe UI", 11, "bold"),
-            text_color=ORANGE_GLOW,
+            text_color=TEXT_MAIN,
         )
         self.visual_thought_title.pack(side="left")
 
         self.visual_delta_badge = ctk.CTkLabel(
             self.visual_thought_header,
             text="Screen Delta: 0.0%",
-            font=("JetBrains Mono", 10, "bold"),
-            text_color="#34d399",
-            fg_color="#064e3b",
+            font=("Segoe UI", 10, "bold"),
+            text_color="#000",
+            fg_color=MINT_ACCENT,
             corner_radius=6,
             padx=6,
             pady=1,
@@ -484,223 +464,65 @@ class SpotlightUI(ctk.CTk):
 
         self.visual_thought_lbl = ctk.CTkLabel(
             self.visual_thought_card,
-            text="Observing visual screen transitions and reasoning next UI action...",
+            text="UI state verified. Preparing next coordinate injection…",
             font=("Segoe UI", 11),
-            text_color=TEXT_SECONDARY,
+            text_color=TEXT_MUTED,
             anchor="w",
-            justify="left",
             wraplength=760,
+            justify="left",
         )
         self.visual_thought_lbl.pack(fill="x", padx=12, pady=(2, 8))
 
-        # Security Trust Pill
-        self.trust_pill = ctk.CTkLabel(
-            self.exec_drawer,
-            text="🔒 Zero Cloud Egress · Local Qwen2.5-VL & Win32 Sandbox",
-            font=("Segoe UI", 10),
-            text_color="#10b981",
-            anchor="w",
-        )
-        self.trust_pill.pack(fill="x", padx=18, pady=(0, 10))
+        # ── Bottom Shortcut Helper Bar ────────────────────────────
+        self.footer = ctk.CTkFrame(self.card, fg_color="transparent", height=28)
+        self.footer.pack(fill="x", side="bottom", padx=20, pady=(4, 10))
 
-        # ── Bottom Shortcut Tips Footer ────────────────────────────
-        self.footer = ctk.CTkFrame(self.card, fg_color="#0a0a0d", corner_radius=10, height=28)
-        self.footer.pack(fill="x", padx=16, pady=(0, 12))
-
-        self.footer_shortcuts = ctk.CTkLabel(
+        lbl_nav = ctk.CTkLabel(
             self.footer,
-            text="↑↓ Navigate   •   ↵ Run   •   Tab Auto-fill   •   Esc Close",
-            font=("Segoe UI", 11),
+            text="↑↓ Navigate   •   Tab Auto-fill   •   ↵ Run   •   Esc Close",
+            font=("Segoe UI", 10, "bold"),
             text_color=TEXT_MUTED,
         )
-        self.footer_shortcuts.pack(side="left", padx=12, pady=4)
+        lbl_nav.pack(side="left")
 
-        self.footer_engine = ctk.CTkLabel(
+        lbl_info = ctk.CTkLabel(
             self.footer,
-            text="● Qwen2.5-VL · Local COM Engine",
-            font=("Segoe UI", 11, "bold"),
-            text_color=ORANGE_MAIN,
+            text="100% Offline Qwen2.5-VL • Zero Egress",
+            font=("Segoe UI", 10, "bold"),
+            text_color=TEXT_MAIN,
         )
-        self.footer_engine.pack(side="right", padx=12, pady=4)
+        lbl_info.pack(side="right")
 
-        # ── State Machine & Selection ──────────────────────────────
-        self.is_visible = True
+        # ── State Machine ─────────────────────────────────────────
+        self.is_visible = False
         self.is_processing = False
         self.selected_index = 0
-        self._current_matches = []
         self._row_widgets = []
+        self._toggle_pending = False
         self._start_time = None
         self._timer_job = None
-        self._glow_job = None
-        self._beam_job = None
-        self._beam_step = 0
-        self._toggle_pending = False
-        self._toggle_lock = threading.Lock()
+        self._is_animating = False
+
+        # Event queue
         self._ui_events = queue.Queue()
 
-        # ── Bindings ───────────────────────────────────────────────
-        self.bind("<Escape>", lambda e: self.hide_spotlight())
+        # Keyboard bindings
         self.search_entry.bind("<KeyRelease>", self._on_key_release)
         self.search_entry.bind("<Down>", self._on_key_down)
         self.search_entry.bind("<Up>", self._on_key_up)
         self.search_entry.bind("<Tab>", self._on_key_tab)
         self.search_entry.bind("<Return>", self._on_key_return)
+        self.search_entry.bind("<Escape>", lambda e: self.hide_spotlight())
 
-        # ── Event Bus Subscriptions ────────────────────────────────
+        # Bind event bus
         if HAS_EVENT_BUS:
             event_bus.subscribe(EVENT_PROGRESS, self._on_progress)
             event_bus.subscribe(EVENT_TASK_SUCCESS, self._on_success)
             event_bus.subscribe(EVENT_TASK_FAILED, self._on_failure)
             event_bus.subscribe(EVENT_VISUAL_THOUGHT, self._on_visual_thought)
 
-        # ── Populate Initial Actions & Start Animated Glowbar ─────
-        self._update_suggestions()
-        self._start_orange_glowbar()
         self._poll_toggle()
-
-    # ── High-Quality Animated Orange Glowbar Beam ──────────────────
-    def _start_orange_glowbar(self):
-        """
-        Sweeps an organic luminous orange light beam back and forth across the glowbar
-        with smooth sine easing, complemented by breathing card border pulse.
-        """
-        w = max(400, self._W - 60)
-
-        def _tick():
-            if not self.is_visible:
-                self._beam_job = self.after(100, _tick)
-                return
-
-            if getattr(self, "_in_burst", False):
-                self._beam_job = self.after(25, _tick)
-                return
-
-            try:
-                self._beam_step = (self._beam_step + 1) % 360
-                rad = math.radians(self._beam_step * 2.2)
-
-                # Sine-wave position of the beam center
-                center_x = (math.sin(rad) * 0.5 + 0.5) * w
-                beam_width = 150 if not self.is_processing else 240
-
-                self.glowbar_canvas.delete("all")
-
-                # Base ambient orange line
-                base_color = "#33180d" if not self.is_processing else "#451a08"
-                self.glowbar_canvas.create_line(0, 2, w, 2, fill=base_color, width=1)
-
-                # Outer diffuse glow
-                x1 = max(0, center_x - beam_width / 2)
-                x2 = min(w, center_x + beam_width / 2)
-                self.glowbar_canvas.create_line(x1, 2, x2, 2, fill=ORANGE_HOT, width=2)
-
-                # Middle bright glow
-                mx1 = max(0, center_x - beam_width / 4)
-                mx2 = min(w, center_x + beam_width / 4)
-                self.glowbar_canvas.create_line(mx1, 2, mx2, 2, fill=ORANGE_MAIN, width=3)
-
-                # Core white-hot flare
-                cx1 = max(0, center_x - 16)
-                cx2 = min(w, center_x + 16)
-                self.glowbar_canvas.create_line(cx1, 2, cx2, 2, fill=ORANGE_PALE, width=3)
-
-                # Card border breathing glow: smooth cycle through luxury orange shades
-                if not self.is_processing:
-                    border_colors = [BORDER_ORANGE, ORANGE_HOT, "#c2410c", ORANGE_HOT, BORDER_ORANGE, ORANGE_GLOW]
-                    color_idx = int((self._beam_step / 15) % len(border_colors))
-                    self.card.configure(border_color=border_colors[color_idx])
-                else:
-                    pulse_idx = int((self._beam_step / 6) % 2)
-                    self.card.configure(border_color=ORANGE_MAIN if pulse_idx == 0 else ORANGE_PALE)
-
-            except Exception:
-                pass
-
-            delay = 25 if self.is_processing else 35
-            self._beam_job = self.after(delay, _tick)
-
-        _tick()
-
-    def _flash_activation_pulse(self):
-        """Intense cinematic orange glowbar shockwave when Spotlight is summoned."""
-        w = max(400, self._W - 60)
-        cx = w / 2
-        self._in_burst = True
-
-        # Card border flash sequence
-        flashes = [ORANGE_PALE, ORANGE_SOFT, ORANGE_GLOW, ORANGE_MAIN, ORANGE_HOT, BORDER_ORANGE]
-        def _card_step(i=0):
-            if i < len(flashes):
-                try:
-                    self.card.configure(border_color=flashes[i], border_width=2)
-                except Exception:
-                    return
-                self.after(35, _card_step, i + 1)
-        _card_step()
-
-        # Canvas expansion shockwave
-        burst_steps = 10
-        def _burst_step(step=0):
-            if not self.is_visible:
-                self._in_burst = False
-                return
-            if step >= burst_steps:
-                self._in_burst = False
-                return
-            progress = (step + 1) / burst_steps
-            spread = progress * (w / 2)
-            alpha_glow = ORANGE_PALE if step < 3 else (ORANGE_GLOW if step < 6 else ORANGE_HOT)
-            try:
-                self.glowbar_canvas.delete("all")
-                # Base track
-                self.glowbar_canvas.create_line(0, 2, w, 2, fill="#33180d", width=1)
-                # Expanding glow beam
-                self.glowbar_canvas.create_line(cx - spread, 2, cx + spread, 2, fill=alpha_glow, width=3)
-                # Intense white-hot center core
-                core_spread = spread * 0.4
-                self.glowbar_canvas.create_line(cx - core_spread, 2, cx + core_spread, 2, fill="#ffffff" if step < 4 else ORANGE_PALE, width=3)
-            except Exception:
-                pass
-            self.after(22, _burst_step, step + 1)
-        _burst_step()
-
-    # ── Apple Interactive Actions & Visual Thinking ───────────────
-    def _toggle_think_mode(self):
-        self.think_mode = not self.think_mode
-        if self.think_mode:
-            self.think_btn.configure(
-                fg_color=ORANGE_BADGE_BG,
-                border_width=1,
-                border_color=ORANGE_HOT,
-                text_color=ORANGE_PALE,
-            )
-        else:
-            self.think_btn.configure(
-                fg_color="#222228",
-                border_width=0,
-                text_color=TEXT_MUTED,
-            )
-
-    def _on_plus_click(self):
-        cats = [k for k, _ in CATEGORY_TABS]
-        idx = (cats.index(self.active_category) + 1) % len(cats)
-        self._set_category(cats[idx])
-
-    def _on_chip_click(self, cmd: str):
-        self.search_var.set(cmd)
-        self._execute_command_text(cmd)
-
-    def _on_visual_thought(self, data):
-        self._ui_events.put(("visual_thought", data))
-
-    def _update_visual_thought(self, data):
-        thought = (data or {}).get("thought", "")
-        diff_pct = (data or {}).get("diff_pct", 0.0)
-        step_idx = (data or {}).get("step_index", 1)
-        tot_steps = (data or {}).get("total_steps", 1)
-        if thought:
-            self.visual_thought_lbl.configure(text=f"Thought: {thought}")
-            self.visual_delta_badge.configure(text=f"Delta: {diff_pct}% (t{step_idx-1}➔t{step_idx})")
+        self.withdraw()
 
     # ── Category Filtering ─────────────────────────────────────────
     def _set_category(self, category_key: str):
@@ -708,22 +530,38 @@ class SpotlightUI(ctk.CTk):
         for key, btn in self._filter_buttons.items():
             if key == category_key:
                 btn.configure(
-                    fg_color=ORANGE_BADGE_BG,
-                    border_width=1,
-                    border_color=ORANGE_HOT,
-                    font=("Segoe UI", 11, "bold"),
-                    text_color=ORANGE_GLOW,
+                    fg_color=YELLOW_ACCENT,
+                    text_color=TEXT_MAIN,
                 )
             else:
                 btn.configure(
-                    fg_color="transparent",
-                    border_width=0,
-                    font=("Segoe UI", 11, "normal"),
-                    text_color=TEXT_MUTED,
+                    fg_color="#FFFFFF",
+                    text_color=TEXT_MAIN,
                 )
         self._update_suggestions()
 
-    # ── Search & Filter Logic ──────────────────────────────────────
+    def _on_plus_click(self):
+        cats = [k for k, _ in CATEGORY_TABS]
+        idx = (cats.index(self.active_category) + 1) % len(cats)
+        self._set_category(cats[idx])
+
+    def _toggle_think_mode(self):
+        self.think_mode = not self.think_mode
+        if self.think_mode:
+            self.think_btn.configure(
+                fg_color=YELLOW_ACCENT,
+                text_color=TEXT_MAIN,
+            )
+        else:
+            self.think_btn.configure(
+                fg_color="#E5E7EB",
+                text_color=TEXT_MUTED,
+            )
+
+    def _on_chip_click(self, cmd: str):
+        self.search_var.set(cmd)
+        self._execute_command_text(cmd)
+
     def _clear_search(self):
         self.search_var.set("")
         self.clear_btn.pack_forget()
@@ -733,7 +571,6 @@ class SpotlightUI(ctk.CTk):
     def _on_key_release(self, event):
         if event.keysym in ("Up", "Down", "Tab", "Return", "Escape"):
             return
-
         query = self.search_var.get().strip()
         if query:
             if not self.clear_btn.winfo_ismapped():
@@ -741,9 +578,9 @@ class SpotlightUI(ctk.CTk):
         else:
             if self.clear_btn.winfo_ismapped():
                 self.clear_btn.pack_forget()
-
         self._update_suggestions()
 
+    # ── Suggestions Rendering ──────────────────────────────────────
     def _update_suggestions(self):
         query = self.search_var.get().strip().lower()
         cat = self.active_category
@@ -763,120 +600,100 @@ class SpotlightUI(ctk.CTk):
                     continue
             filtered.append(item)
 
-        self._current_matches = filtered
-        self.selected_index = 0 if filtered else -1
-        self._render_suggestion_rows()
-
-    # ── Render Suggestion Rows (Black, Gray & Orange) ──────────────
-    def _render_suggestion_rows(self):
+        # Clear existing rows
         for w in self.suggestions_frame.winfo_children():
             w.destroy()
         self._row_widgets = []
+        self.selected_index = 0
 
-        if not self._current_matches:
-            empty_frame = ctk.CTkFrame(self.suggestions_frame, fg_color="#111114", corner_radius=10)
-            empty_frame.pack(fill="x", pady=6)
-            q = self.search_var.get().strip()
-            msg = f"↵ Run Custom Automation: '{q}'" if q else "No matching routine. Type any plain-text automation command."
-            lbl = ctk.CTkLabel(
-                empty_frame,
-                text=msg,
-                font=("Segoe UI", 13, "bold" if q else "normal"),
-                text_color=ORANGE_GLOW if q else TEXT_MUTED,
-            )
-            lbl.pack(pady=14, padx=16, anchor="w")
-            self._resize_for_content(1)
-            return
+        if not filtered and query:
+            # Custom command fallback item
+            custom_item = {
+                "id": "custom_run",
+                "category": "CUSTOM",
+                "icon": "⚡",
+                "title": f"Execute Intent: \"{self.search_var.get().strip()}\"",
+                "command": self.search_var.get().strip(),
+                "subtitle": "Deconstruct customer prompt & run local automation pipeline",
+                "badge": "Custom",
+                "badge_color": YELLOW_ACCENT,
+            }
+            filtered = [custom_item]
 
-        for idx, item in enumerate(self._current_matches[:5]):
-            is_active = (idx == self.selected_index)
-            row = ctk.CTkFrame(
+        for idx, item in enumerate(filtered[:5]):
+            row_frame = ctk.CTkFrame(
                 self.suggestions_frame,
-                fg_color=BG_ROW_ACTIVE if is_active else BG_ROW,
-                corner_radius=10,
-                border_width=1 if is_active else 0,
-                border_color=BORDER_ORANGE if is_active else BG_ROW,
+                fg_color=BG_ROW_ACTIVE if idx == 0 else BG_ROW,
+                corner_radius=12,
                 height=52,
+                border_width=2 if idx == 0 else 1.5,
+                border_color=BORDER_BLACK,
             )
-            row.pack(fill="x", pady=2)
-            row.pack_propagate(False)
+            row_frame.pack(fill="x", pady=2)
+            row_frame.pack_propagate(False)
 
-            # Left Icon Chip in warm charcoal
-            icon_box = ctk.CTkFrame(
-                row,
-                width=34,
-                height=34,
-                corner_radius=8,
-                fg_color=ORANGE_BADGE_BG if is_active else "#1f1f23",
-            )
-            icon_box.pack(side="left", padx=(10, 10), pady=9)
-            icon_box.pack_propagate(False)
-
+            # Left Icon
             icon_lbl = ctk.CTkLabel(
-                icon_box,
+                row_frame,
                 text=item["icon"],
-                font=("Segoe UI Emoji", 15),
+                font=("Segoe UI Emoji", 16),
+                width=34,
             )
-            icon_lbl.place(relx=0.5, rely=0.5, anchor="center")
+            icon_lbl.pack(side="left", padx=(10, 6))
 
-            # Center Title & Subtitle Info
-            text_box = ctk.CTkFrame(row, fg_color="transparent")
-            text_box.pack(side="left", fill="both", expand=True, pady=6)
+            # Texts block
+            text_block = ctk.CTkFrame(row_frame, fg_color="transparent")
+            text_block.pack(side="left", fill="both", expand=True, pady=6)
 
             title_lbl = ctk.CTkLabel(
-                text_box,
+                text_block,
                 text=item["title"],
                 font=("Segoe UI", 13, "bold"),
-                text_color=TEXT_PRIMARY,
+                text_color=TEXT_MAIN,
                 anchor="w",
             )
             title_lbl.pack(fill="x")
 
             subtitle_lbl = ctk.CTkLabel(
-                text_box,
+                text_block,
                 text=item["subtitle"],
                 font=("Segoe UI", 11),
-                text_color=TEXT_MUTED if not is_active else ORANGE_GLOW,
+                text_color=TEXT_MUTED,
                 anchor="w",
             )
             subtitle_lbl.pack(fill="x")
 
-            # Right Badges (Category Pill + Run Action)
-            badges_box = ctk.CTkFrame(row, fg_color="transparent")
-            badges_box.pack(side="right", padx=(6, 12))
+            # Right badge & run tag
+            right_frame = ctk.CTkFrame(row_frame, fg_color="transparent")
+            right_frame.pack(side="right", padx=(8, 12))
 
-            cat_badge = ctk.CTkLabel(
-                badges_box,
-                text=item.get("badge", item["category"]),
+            badge_lbl = ctk.CTkLabel(
+                right_frame,
+                text=item.get("badge", "Action"),
                 font=("Segoe UI", 10, "bold"),
-                text_color=item.get("badge_color", ORANGE_MAIN),
-                fg_color=ORANGE_BADGE_BG,
+                fg_color=item.get("badge_color", YELLOW_ACCENT),
+                text_color=TEXT_MAIN,
                 corner_radius=6,
-                width=72,
-                height=22,
+                padx=8,
+                pady=1,
             )
-            cat_badge.pack(side="left", padx=(0, 6))
+            badge_lbl.pack(side="left", padx=(0, 8))
 
             run_lbl = ctk.CTkLabel(
-                badges_box,
-                text="↵ Run",
+                right_frame,
+                text="↵ RUN",
                 font=("Segoe UI", 11, "bold"),
-                text_color=ORANGE_MAIN if is_active else TEXT_DIM,
+                text_color=TEXT_MAIN,
             )
             run_lbl.pack(side="right")
 
-            def _make_select(i=idx):
-                self._select_row(i)
-
-            def _make_exec(cmd=item["command"]):
-                self._execute_command_text(cmd)
-
-            for widget in (row, icon_box, icon_lbl, text_box, title_lbl, subtitle_lbl, badges_box, cat_badge, run_lbl):
+            # Click binding
+            for widget in (row_frame, icon_lbl, text_block, title_lbl, subtitle_lbl, right_frame, badge_lbl, run_lbl):
+                widget.bind("<Button-1>", lambda e, c=item["command"]: self._execute_command_text(c))
                 widget.bind("<Enter>", lambda e, i=idx: self._select_row(i))
-                widget.bind("<Button-1>", lambda e, cmd=item["command"]: self._execute_command_text(cmd))
 
             self._row_widgets.append({
-                "row": row,
+                "row": row_frame,
                 "title": title_lbl,
                 "subtitle": subtitle_lbl,
                 "run": run_lbl,
@@ -893,27 +710,23 @@ class SpotlightUI(ctk.CTk):
             is_active = (idx == self.selected_index)
             rw["row"].configure(
                 fg_color=BG_ROW_ACTIVE if is_active else BG_ROW,
-                border_width=1 if is_active else 0,
-                border_color=BORDER_ORANGE if is_active else BG_ROW,
+                border_width=2 if is_active else 1.5,
             )
-            rw["subtitle"].configure(text_color=ORANGE_GLOW if is_active else TEXT_MUTED)
-            rw["run"].configure(text_color=ORANGE_MAIN if is_active else TEXT_DIM)
 
     def _resize_for_content(self, row_count: int):
-        header_h = 70
+        header_h = 76
         chips_h = 36
-        filter_h = 32
+        filter_h = 34
         footer_h = 38
-        row_h = 56
+        row_h = 58
         new_h = header_h + chips_h + filter_h + (row_count * row_h) + footer_h + 16
         self._resize_window(min(new_h, self._H_EXPANDED))
 
     def _resize_window(self, height: int):
+        self._current_h = height
         sw = self.winfo_screenwidth()
-        sh = self.winfo_screenheight()
         pos_x = int(sw / 2 - self._W / 2)
-        pos_y = int(sh * 0.22)
-        self.geometry(f"{self._W}x{height}+{pos_x}+{pos_y}")
+        self.geometry(f"{self._W}x{height}+{pos_x}+{self._pos_y}")
 
     # ── Keyboard Navigation Handlers ───────────────────────────────
     def _on_key_down(self, event):
@@ -947,7 +760,6 @@ class SpotlightUI(ctk.CTk):
     # ── Execution Pipeline Dispatch ────────────────────────────────
     def on_execute(self):
         typed = self.search_var.get().strip()
-
         if 0 <= self.selected_index < len(self._row_widgets):
             command = self._row_widgets[self.selected_index]["item"]["command"]
             if typed and not any(typed.lower() in self._row_widgets[self.selected_index]["item"][k].lower() for k in ("command", "title", "subtitle")):
@@ -956,7 +768,6 @@ class SpotlightUI(ctk.CTk):
             command = typed
         else:
             return
-
         self._execute_command_text(command)
 
     def _execute_command_text(self, command: str):
@@ -965,7 +776,6 @@ class SpotlightUI(ctk.CTk):
 
         self.is_processing = True
         self._start_time = time.time()
-
         self._show_execution_view(command)
 
         is_vision = any(w in command.lower() for w in ("click", "ground", "save changes", "find on screen"))
@@ -985,23 +795,19 @@ class SpotlightUI(ctk.CTk):
             threading.Thread(target=self._mock_run, args=(command,), daemon=True).start()
 
     def _show_execution_view(self, command: str):
-        if hasattr(self, "chips_frame"):
-            self.chips_frame.pack_forget()
+        self.chips_frame.pack_forget()
         self.filter_bar.pack_forget()
         self.suggestions_frame.pack_forget()
         self.footer.pack_forget()
 
         disp_cmd = command if len(command) <= 52 else command[:49] + "…"
         self.exec_title_lbl.configure(text=f"⚡ Executing: {disp_cmd}")
-        self.exec_step_lbl.configure(text="🔒 Redacting PII from screenshot…")
+        self.exec_step_lbl.configure(text="🔒 Grounding action on screen…")
+        self.status_pill.configure(text="🔥 EXECUTING ROUTINE", fg_color=YELLOW_ACCENT)
 
         self.exec_drawer.pack(fill="both", expand=True, padx=16, pady=(6, 12))
-        self.progress_bar.start()
-
         self._resize_window(self._H_EXEC)
-        self.card.configure(border_color=ORANGE_MAIN, border_width=2)
         self.search_entry.configure(state="disabled")
-
         self._tick_timer()
 
     def _tick_timer(self):
@@ -1014,12 +820,9 @@ class SpotlightUI(ctk.CTk):
 
     def _mock_run(self, query):
         mock_steps = [
-            "🔒 Redacting PII from screenshot…",
-            "🧠 Grounding target with VisionModel…",
-            "🎯 Projecting AR bounding box…",
-            "🖱 Executing smooth action…",
-            "📧 Composing & dispatching email via Outlook COM…",
-            "📊 Calculating ROI & logging…",
+            "🔒 Grounding action on screen…",
+            "🖱 Injecting sandboxed click action…",
+            "📊 Verifying post-action visual state…",
         ]
         for step in mock_steps:
             time.sleep(0.7)
@@ -1042,88 +845,71 @@ class SpotlightUI(ctk.CTk):
     def _on_failure(self, data):
         self._ui_events.put(("failure", (data or {}).get("error", "Unknown error")))
 
+    def _on_visual_thought(self, data):
+        self._ui_events.put(("visual_thought", data))
+
     def _drain_ui_events(self):
         while True:
             try:
                 kind, data = self._ui_events.get_nowait()
             except queue.Empty:
                 return
+
             if kind == "step":
-                self._update_step(data)
+                self.exec_step_lbl.configure(text=data)
             elif kind == "visual_thought":
-                self._update_visual_thought(data)
+                thought = (data or {}).get("thought", "")
+                diff_pct = (data or {}).get("diff_pct", 0.0)
+                if thought:
+                    self.visual_thought_lbl.configure(text=f"Thought: {thought}")
+                    self.visual_delta_badge.configure(text=f"Delta: {diff_pct}%")
             elif kind == "success":
-                self._finish_success(data.get("summary", ""), data.get("roi", ""))
+                self._handle_pipeline_success(data)
             elif kind == "failure":
-                self._finish_failure(data)
+                self._handle_pipeline_failure(data)
 
-    def _update_step(self, text):
-        if text:
-            self.exec_step_lbl.configure(text=f"● {text}")
-
-    def _finish_success(self, summary, roi):
-        self.progress_bar.stop()
+    def _handle_pipeline_success(self, data):
         self.is_processing = False
-        if self._timer_job:
-            self.after_cancel(self._timer_job)
+        summary = data.get("summary", "Task finished")
+        roi = data.get("roi", "Saved 3.0m | $0.01")
 
-        self.card.configure(border_color="#10b981", border_width=2)
-        self.search_entry.configure(state="normal")
-        self.search_var.set("")
-        if self.clear_btn.winfo_ismapped():
-            self.clear_btn.pack_forget()
+        self.exec_step_lbl.configure(text=f"✅ {summary}")
+        self.status_pill.configure(text="✅ COMPLETED", fg_color=MINT_ACCENT)
+        self.after(1600, self._restore_search_view)
+        _show_ctk_toast(self, f"🎉 Routine Finished: {summary} • {roi}")
 
+    def _handle_pipeline_failure(self, error_msg):
+        self.is_processing = False
+        self.exec_step_lbl.configure(text=f"❌ Failed: {error_msg}")
+        self.status_pill.configure(text="❌ FAILED", fg_color=CORAL_ACCENT)
+        self.after(2200, self._restore_search_view)
+        _show_ctk_toast(self, f"⚠ Automation Error: {error_msg}", color=CORAL_ACCENT)
+
+    def _restore_search_view(self):
         self.exec_drawer.pack_forget()
-        if hasattr(self, "chips_frame"):
-            self.chips_frame.pack(fill="x", padx=16, pady=(0, 6))
-        self.filter_bar.pack(fill="x", padx=18, pady=(2, 6))
+        self.chips_frame.pack(fill="x", padx=16, pady=(0, 8), before=self.filter_bar)
+        self.filter_bar.pack(fill="x", padx=18, pady=(0, 8), before=self.suggestions_frame)
         self.suggestions_frame.pack(fill="both", expand=True, padx=16, pady=(2, 6))
-        self.footer.pack(fill="x", padx=16, pady=(0, 12))
+        self.footer.pack(fill="x", side="bottom", padx=20, pady=(4, 10))
+
+        self.search_entry.configure(state="normal")
+        self.status_pill.configure(text="⚡ SYSTEM READY", fg_color=YELLOW_ACCENT)
         self._update_suggestions()
 
-        self.hide_spotlight()
-
-        # Pop floating HUD toast in Black & Orange
-        self.after(200, lambda: _show_ctk_toast(self, f"✅ Done — {roi}", ORANGE_MAIN))
-        self.after(1200, lambda: self.card.configure(border_color=BORDER_ORANGE, border_width=2))
-
-    def _finish_failure(self, error):
-        self.progress_bar.stop()
-        self.is_processing = False
-        if self._timer_job:
-            self.after_cancel(self._timer_job)
-
-        self.card.configure(border_color="#ef4444", border_width=2)
-        self.search_entry.configure(state="normal")
-
-        self.exec_drawer.pack_forget()
-        if hasattr(self, "chips_frame"):
-            self.chips_frame.pack(fill="x", padx=16, pady=(0, 6))
-        self.filter_bar.pack(fill="x", padx=18, pady=(2, 6))
-        self.suggestions_frame.pack(fill="both", expand=True, padx=16, pady=(2, 6))
-        self.footer.pack(fill="x", padx=16, pady=(0, 12))
-        self._update_suggestions()
-
-        self.after(0, lambda: _show_ctk_toast(self, f"❌ Failed: {error[:42]}", "#ef4444"))
-        self.after(1200, lambda: self.card.configure(border_color=BORDER_ORANGE, border_width=2))
-
-    # ── Visibility & Hotkey Toggling ───────────────────────────────
+    # ── Hotkey Poller & Toggle ─────────────────────────────────────
     def request_toggle(self):
-        with self._toggle_lock:
-            self._toggle_pending = True
+        self._toggle_pending = True
 
     def _poll_toggle(self):
         try:
-            with self._toggle_lock:
-                pending = self._toggle_pending
+            if self._toggle_pending:
                 self._toggle_pending = False
-            if pending:
                 self.toggle_spotlight()
             self._drain_ui_events()
         except Exception as exc:
             print(f">> [Hotkeys] Toggle failed: {exc}")
         try:
-            self.after(45, self._poll_toggle)
+            self.after(40, self._poll_toggle)
         except Exception:
             pass
 
@@ -1133,34 +919,88 @@ class SpotlightUI(ctk.CTk):
         else:
             self.show_spotlight()
 
-    def hide_spotlight(self):
-        self.withdraw()
-        self.is_visible = False
-
+    # ── Open & Close Animations ────────────────────────────────────
     def show_spotlight(self):
-        if sys.platform.startswith("win"):
-            try:
-                self.attributes("-transparentcolor", TRANSPARENT_KEY)
-            except Exception:
-                pass
+        """Smooth slide-in and opacity fade-in animation."""
+        if self.is_visible or self._is_animating:
+            return
+
+        self._is_animating = True
         self.overrideredirect(True)
         self.deiconify()
         self.attributes("-topmost", True)
-        self.attributes("-alpha", 0.98)
+        self.attributes("-alpha", 0.0)
         self.lift()
-        try:
-            self.focus_force()
-            self.search_entry.focus_set()
-        except Exception:
-            pass
-        self.is_visible = True
-        self._update_suggestions()
-        self._flash_activation_pulse()
+
+        # Start slightly higher for smooth slide down
+        start_y = self._pos_y - 18
+        self.geometry(f"{self._W}x{self._current_h}+{self._pos_x}+{start_y}")
+
+        frames = 8
+        delay_ms = 14
+
+        def _step(i=0):
+            if i <= frames:
+                # Easing curve
+                t = i / frames
+                alpha = round(0.98 * t, 3)
+                cur_y = int(start_y + (self._pos_y - start_y) * (1 - (1 - t) ** 2))
+                try:
+                    self.attributes("-alpha", alpha)
+                    self.geometry(f"{self._W}x{self._current_h}+{self._pos_x}+{cur_y}")
+                except Exception:
+                    pass
+                self.after(delay_ms, _step, i + 1)
+            else:
+                self.attributes("-alpha", 0.98)
+                self.geometry(f"{self._W}x{self._current_h}+{self._pos_x}+{self._pos_y}")
+                self.is_visible = True
+                self._is_animating = False
+                try:
+                    self.focus_force()
+                    self.search_entry.focus_set()
+                except Exception:
+                    pass
+                self._update_suggestions()
+
+        _step(0)
+
+    def hide_spotlight(self):
+        """Smooth slide-up and opacity fade-out animation."""
+        if not self.is_visible or self._is_animating:
+            self.withdraw()
+            self.is_visible = False
+            return
+
+        self._is_animating = True
+        start_y = self._pos_y
+        target_y = self._pos_y - 14
+
+        frames = 7
+        delay_ms = 12
+
+        def _step(i=0):
+            if i <= frames:
+                t = i / frames
+                alpha = round(0.98 * (1 - t), 3)
+                cur_y = int(start_y + (target_y - start_y) * t)
+                try:
+                    self.attributes("-alpha", alpha)
+                    self.geometry(f"{self._W}x{self._current_h}+{self._pos_x}+{cur_y}")
+                except Exception:
+                    pass
+                self.after(delay_ms, _step, i + 1)
+            else:
+                self.withdraw()
+                self.is_visible = False
+                self._is_animating = False
+
+        _step(0)
 
 
-# ─── Floating HUD Toast Notification Helper (Black, Gray & Orange) ───
+# ─── Floating Toast Notification Helper ───────────────────────────
 class _CtkToast(ctk.CTkToplevel):
-    def __init__(self, parent, message, color):
+    def __init__(self, parent, message, color=YELLOW_ACCENT):
         super().__init__(parent)
         self.overrideredirect(True)
         self.attributes("-topmost", True)
@@ -1174,29 +1014,29 @@ class _CtkToast(ctk.CTkToplevel):
         self.configure(fg_color=TRANSPARENT_KEY)
 
         sw = self.winfo_screenwidth()
-        W, H = 450, 60
-        self.geometry(f"{W}x{H}+{int(sw/2 - W/2)}+28")
+        W, H = 460, 56
+        self.geometry(f"{W}x{H}+{int(sw/2 - W/2)}+26")
 
         frame = ctk.CTkFrame(
             self,
-            fg_color="#121215",
-            corner_radius=16,
-            border_width=2,
-            border_color=color,
+            fg_color=color,
+            corner_radius=14,
+            border_width=2.5,
+            border_color=BORDER_BLACK,
         )
         frame.pack(fill="both", expand=True, padx=4, pady=4)
 
         ctk.CTkLabel(
             frame,
             text=message,
-            font=("Segoe UI", 14, "bold"),
-            text_color="#fafafa",
+            font=("Segoe UI", 13, "bold"),
+            text_color=TEXT_MAIN,
         ).pack(expand=True)
 
         self._fade(0.0, 1)
 
     def _fade(self, a, direction):
-        a = round(a + 0.1 * direction, 2)
+        a = round(a + 0.12 * direction, 2)
         a = max(0.0, min(1.0, a))
         try:
             self.attributes("-alpha", a)
@@ -1205,7 +1045,7 @@ class _CtkToast(ctk.CTkToplevel):
         if direction == 1 and a < 0.98:
             self.after(16, self._fade, a, 1)
         elif direction == 1:
-            self.after(3400, self._fade, a, -1)
+            self.after(3000, self._fade, a, -1)
         elif a > 0.0:
             self.after(16, self._fade, a, -1)
         else:
@@ -1215,13 +1055,13 @@ class _CtkToast(ctk.CTkToplevel):
                 pass
 
 
-def _show_ctk_toast(parent, message, color=ORANGE_MAIN):
+def _show_ctk_toast(parent, message, color=YELLOW_ACCENT):
     _CtkToast(parent, message, color)
 
 
 # ─── Global Hotkey Listener (Ctrl + Space) ────────────────────────
 def hotkey_listener(app):
-    """Global Ctrl+Space. Runs off the Tk thread and signals toggle request."""
+    """Global Ctrl+Space listener."""
     if _listen_win32_hotkey(app):
         return
     keyboard.add_hotkey("ctrl+space", app.request_toggle, suppress=False)

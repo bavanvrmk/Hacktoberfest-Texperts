@@ -122,20 +122,93 @@ async def workflows_page(request: Request):
         }
     )
 
+@app.get("/settings", response_class=HTMLResponse)
+async def settings_page(request: Request):
+    from core.config_manager import load_settings
+    settings = load_settings()
+    return templates.TemplateResponse(
+        request=request,
+        name="settings.html",
+        context={
+            "request": request,
+            "settings": settings
+        }
+    )
+
+@app.get("/api/settings", response_class=JSONResponse)
+async def api_get_settings():
+    from core.config_manager import load_settings
+    return load_settings()
+
+@app.post("/api/settings", response_class=JSONResponse)
+async def api_update_settings(payload: dict):
+    from core.config_manager import save_settings
+    try:
+        updated = save_settings(payload)
+        return {"ok": True, "settings": updated}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+
+@app.post("/api/settings/test-llama", response_class=JSONResponse)
+async def api_test_llama(payload: dict = None):
+    import urllib.request
+    from core.config_manager import get_setting
+    url = (payload or {}).get("url") or get_setting("llama_server_url", "http://127.0.0.1:8080/v1")
+    # Clean health or chat completion endpoint
+    target = url.rstrip("/") + "/models" if "/v1" in url else url.rstrip("/") + "/health"
+    try:
+        req = urllib.request.Request(target, headers={"User-Agent": "ShadowAutomator/2.0"}, method="GET")
+        with urllib.request.urlopen(req, timeout=3.0) as resp:
+            status = resp.status
+            return {"ok": True, "status": status, "target": target, "message": "Connected successfully to local vision engine"}
+    except Exception as exc:
+        return JSONResponse({"ok": False, "target": target, "error": str(exc)}, status_code=502)
+
 @app.get("/api/workflows")
 async def api_workflows():
     from core.workflow_manager import WorkflowManager
     return WorkflowManager().list_workflows()
 
+@app.get("/api/workflows/{workflow_id}")
+async def api_get_workflow(workflow_id: int):
+    from core.workflow_manager import WorkflowManager
+    wf = WorkflowManager().get(workflow_id)
+    if not wf:
+        return JSONResponse({"error": "Workflow not found"}, status_code=404)
+    return wf
+
 @app.post("/api/workflows")
 async def api_create_workflow(payload: dict):
     from core.workflow_manager import WorkflowManager
     command = payload.get("command", "").strip()
+    name = payload.get("name", "").strip() or None
+    steps = payload.get("steps")
     if not command:
         return JSONResponse({"error": "Command string cannot be empty"}, status_code=400)
     try:
-        wf_id, steps = WorkflowManager().save(command)
+        wf_id, steps = WorkflowManager().save(command, steps=steps, name=name)
         return {"ok": True, "id": wf_id, "steps": steps}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+
+@app.put("/api/workflows/{workflow_id}")
+async def api_update_workflow(workflow_id: int, payload: dict):
+    from core.workflow_manager import WorkflowManager
+    name = payload.get("name")
+    command = payload.get("command")
+    steps = payload.get("steps")
+    try:
+        updated = WorkflowManager().update(workflow_id, name=name, command=command, steps=steps)
+        return {"ok": True, "workflow": updated}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+
+@app.delete("/api/workflows/{workflow_id}")
+async def api_delete_workflow(workflow_id: int):
+    from core.workflow_manager import WorkflowManager
+    try:
+        WorkflowManager().delete(workflow_id)
+        return {"ok": True, "id": workflow_id}
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=400)
 
@@ -146,8 +219,8 @@ async def api_run_workflow(workflow_id: int):
     workflow = WorkflowManager().get(workflow_id)
     if not workflow:
         return JSONResponse({"error": "workflow not found"}, status_code=404)
-    threading.Thread(target=orchestrator.run_pipeline, args=(workflow["command"],), daemon=True).start()
-    return {"ok": True, "id": workflow_id}
+    threading.Thread(target=orchestrator.run_workflow_id, args=(workflow_id,), daemon=True).start()
+    return {"ok": True, "id": workflow_id, "name": workflow["name"]}
 
 @app.post("/api/spotlight/run")
 async def api_spotlight_run(payload: dict):

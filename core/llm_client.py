@@ -11,9 +11,15 @@ import urllib.request
 import urllib.error
 from io import BytesIO
 
+try:
+    from core.config_manager import get_setting
+except ImportError:
+    def get_setting(k, d=None): return d
+
 class LLMClient:
-    def __init__(self, base_url="http://localhost:8080/v1"):
-        self.base_url = base_url
+    def __init__(self, base_url=None):
+        configured = get_setting("llama_server_url", "http://localhost:8080/v1")
+        self.base_url = base_url or configured
 
     def encode_image_base64(self, image_path: str, max_side: int = 1280) -> str:
         """Resize a screenshot so a 4B vision model can finish inside the context window."""
