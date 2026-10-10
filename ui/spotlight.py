@@ -340,8 +340,12 @@ class SpotlightUI(ctk.CTk):
         )
         self.beacon_btn.pack(side="right", padx=(4, 8))
 
+        # ── Browse View Container (Holds chips, filter pills, and suggestions) ──
+        self.browse_container = ctk.CTkFrame(self.card, fg_color="transparent")
+        self.browse_container.pack(fill="both", expand=True, padx=0, pady=0)
+
         # ── Suggestion Chips Bar ──────────────────────────────────
-        self.chips_frame = ctk.CTkFrame(self.card, fg_color="transparent", height=32)
+        self.chips_frame = ctk.CTkFrame(self.browse_container, fg_color="transparent", height=32)
         self.chips_frame.pack(fill="x", padx=16, pady=(0, 8))
 
         for chip_label, chip_cmd in SUGGESTION_CHIPS:
@@ -361,7 +365,7 @@ class SpotlightUI(ctk.CTk):
             cbtn.pack(side="left", padx=(0, 6))
 
         # ── Category Filter Bar ────────────────────────────────────
-        self.filter_bar = ctk.CTkFrame(self.card, fg_color="transparent", height=30)
+        self.filter_bar = ctk.CTkFrame(self.browse_container, fg_color="transparent", height=30)
         self.filter_bar.pack(fill="x", padx=18, pady=(0, 8))
 
         self.active_category = "ALL"
@@ -384,7 +388,7 @@ class SpotlightUI(ctk.CTk):
             self._filter_buttons[cat_key] = btn
 
         # ── Suggestions Container ─────────────────────────────────
-        self.suggestions_frame = ctk.CTkFrame(self.card, fg_color="transparent")
+        self.suggestions_frame = ctk.CTkFrame(self.browse_container, fg_color="transparent")
         self.suggestions_frame.pack(fill="both", expand=True, padx=16, pady=(2, 6))
 
         # ── Execution Telemetry Drawer (Hidden until running) ──────
@@ -795,17 +799,14 @@ class SpotlightUI(ctk.CTk):
             threading.Thread(target=self._mock_run, args=(command,), daemon=True).start()
 
     def _show_execution_view(self, command: str):
-        self.chips_frame.pack_forget()
-        self.filter_bar.pack_forget()
-        self.suggestions_frame.pack_forget()
-        self.footer.pack_forget()
+        self.browse_container.pack_forget()
 
         disp_cmd = command if len(command) <= 52 else command[:49] + "…"
         self.exec_title_lbl.configure(text=f"⚡ Executing: {disp_cmd}")
         self.exec_step_lbl.configure(text="🔒 Grounding action on screen…")
         self.status_pill.configure(text="🔥 EXECUTING ROUTINE", fg_color=YELLOW_ACCENT)
 
-        self.exec_drawer.pack(fill="both", expand=True, padx=16, pady=(6, 12))
+        self.exec_drawer.pack(fill="both", expand=True, padx=16, pady=(6, 12), before=self.footer)
         self._resize_window(self._H_EXEC)
         self.search_entry.configure(state="disabled")
         self._tick_timer()
@@ -887,10 +888,7 @@ class SpotlightUI(ctk.CTk):
 
     def _restore_search_view(self):
         self.exec_drawer.pack_forget()
-        self.chips_frame.pack(fill="x", padx=16, pady=(0, 8), before=self.filter_bar)
-        self.filter_bar.pack(fill="x", padx=18, pady=(0, 8), before=self.suggestions_frame)
-        self.suggestions_frame.pack(fill="both", expand=True, padx=16, pady=(2, 6))
-        self.footer.pack(fill="x", side="bottom", padx=20, pady=(4, 10))
+        self.browse_container.pack(fill="both", expand=True, padx=0, pady=0, before=self.footer)
 
         self.search_entry.configure(state="normal")
         self.status_pill.configure(text="⚡ SYSTEM READY", fg_color=YELLOW_ACCENT)
