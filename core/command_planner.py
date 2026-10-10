@@ -116,7 +116,8 @@ def compile_customer_intent_workflow(command: str, complete_fn) -> list:
         "- launch_app: target is app name (e.g. 'WhatsApp', 'Notepad', 'Google Chrome')\n"
         "- open_url: target is a full URL or web service\n"
         "- click: target is description of UI element to locate visually and click (e.g. 'Search bar', 'Contact')\n"
-        "- type: target is text string to type (e.g. 'pranav cceb', 'hi')\n"
+        "- type: target is short string to type (e.g. 'pranav cceb', 'hi')\n"
+        "- generate: target is the topic/subject to compose rich factual text/report/notes for (e.g. 'Comprehensive factual details, background, and summary of the Jantar Mantar protest'). Use 'generate' whenever the user wants information, research, or notes written into an app!\n"
         "- hotkey: target is keyboard shortcut (e.g. 'enter', 'ctrl+f', 'esc')\n"
         "- wait: target is seconds to wait for UI rendering (e.g. '2.0', '1.0')\n"
         "- summarize_screen: target is what to read and summarize on the visible screen\n"
@@ -124,8 +125,9 @@ def compile_customer_intent_workflow(command: str, complete_fn) -> list:
         "- close_app: target is app name to close\n\n"
         "Guidelines:\n"
         "1. For messaging apps (WhatsApp, Slack): launch_app -> wait 2.0s -> click search bar -> type contact name -> hotkey enter -> wait 1.0s -> type message -> hotkey enter.\n"
-        "2. For screen reading/summarization: action is 'summarize_screen'.\n"
-        "3. Output strictly valid JSON only with no markdown backticks:\n"
+        "2. For researching, fetching details, or writing notes in Notepad/documents: launch_app -> wait 1.5s -> generate (with full factual topic description). NEVER use placeholder brackets like '[summarized content from search results]'. Use 'generate' so the model writes real content.\n"
+        "3. For screen reading/summarization: action is 'summarize_screen'.\n"
+        "4. Output strictly valid JSON only with no markdown backticks:\n"
         "{\"workflow_name\": \"...\", \"steps\": [{\"action\": \"...\", \"target\": \"...\", \"description\": \"...\"}]}"
     )
     try:
@@ -168,6 +170,20 @@ def compile_customer_intent_workflow(command: str, complete_fn) -> list:
         ]
     elif any(k in cmd_lower for k in ("summarize screen", "read screen", "read contents on the screen")):
         return [{"action": "summarize_screen", "target": command, "description": "Read screen and generate AI summary"}]
+    elif any(k in cmd_lower for k in ("notepad", "notes", "text file", "document")) and any(w in cmd_lower for w in ("fetch", "give", "write", "search", "details", "info", "information", "protest", "report")):
+        # Extract topic cleanly
+        topic = command
+        topic = re.sub(r"^(?:fetch|get|gather|search for|find|give|write|provide)\s+(?:me\s+)?(?:the\s+)?(?:details|info|information|notes|summary|report)\s+(?:of|about|on|regarding)?\s*", "", topic, flags=re.IGNORECASE)
+        topic = re.sub(r"\s*(?:and\s+)?(?:give|write|put|save)\s+(?:it\s+)?(?:in|to|into)\s+(?:a\s+)?(?:notepad|text|notes|doc|file)(?:\s+file)?.*$", "", topic, flags=re.IGNORECASE)
+        topic = re.sub(r"\s*(?:in|to|into)\s+(?:a\s+)?(?:notepad|text|notes|doc|file)(?:\s+file)?.*$", "", topic, flags=re.IGNORECASE)
+        topic = topic.strip(" .:-\"'\t\r\n")
+        if not topic or len(topic) < 3:
+            topic = "the requested topic and protest developments"
+        return [
+            {"action": "launch_app", "target": "Notepad", "description": "Launch Notepad application"},
+            {"action": "wait", "target": "1.5", "description": "Wait for Notepad to load"},
+            {"action": "generate", "target": f"Comprehensive factual details, background, and summary regarding {topic}", "description": f"Generate factual details on {topic}"}
+        ]
 
     return plan_command(command)
 

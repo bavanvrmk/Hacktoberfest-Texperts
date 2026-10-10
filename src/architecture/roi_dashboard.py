@@ -65,7 +65,9 @@ def get_stats_data():
 
 @app.get("/", response_class=HTMLResponse)
 async def read_dashboard(request: Request):
+    from core.config_manager import load_settings
     logs, roi_data, stats_summary = get_stats_data()
+    settings = load_settings()
     return templates.TemplateResponse(
         request=request,
         name="dashboard.html",
@@ -73,7 +75,8 @@ async def read_dashboard(request: Request):
             "request": request, 
             "logs": logs,
             "roi": roi_data,
-            "stats": stats_summary
+            "stats": stats_summary,
+            "settings": settings
         }
     )
 
@@ -112,13 +115,16 @@ async def api_get_log(log_id: int):
 @app.get("/workflows", response_class=HTMLResponse)
 async def workflows_page(request: Request):
     from core.workflow_manager import WorkflowManager
+    from core.config_manager import load_settings
     workflows = WorkflowManager().list_workflows()
+    settings = load_settings()
     return templates.TemplateResponse(
         request=request,
         name="workflows.html",
         context={
             "request": request,
-            "workflows": workflows
+            "workflows": workflows,
+            "settings": settings
         }
     )
 

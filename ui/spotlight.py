@@ -37,28 +37,93 @@ except ImportError:
     HAS_EVENT_BUS = False
 
 
-# ─── Neo-Brutalist Design Tokens ─────────────────────────────────
+try:
+    from core.config_manager import get_setting
+except ImportError:
+    def get_setting(key, default=None):
+        return default
+
+
+# ─── Multi-Theme Palettes ──────────────────────────────────────────
+THEMES = {
+    "neo_brutalist": {
+        "name": "Neo-Brutalist Sunshine",
+        "bg_canvas": "#FFFDF0",
+        "bg_card": "#FFFDF5",
+        "bg_entry": "#FFFFFF",
+        "bg_row": "#FFFFFF",
+        "bg_row_hover": "#FFF9E6",
+        "bg_row_active": "#FFE600",
+        "border_color": "#000000",
+        "accent": "#FFE600",
+        "accent_text": "#000000",
+        "coral": "#FF5757",
+        "mint": "#22C55E",
+        "sky": "#38BDF8",
+        "lavender": "#C084FC",
+        "text_main": "#000000",
+        "text_muted": "#444444",
+        "text_dim": "#666666",
+    },
+    "retro_ivory": {
+        "name": "Classic Retro Cream & Black",
+        "bg_canvas": "#F5EFEB",
+        "bg_card": "#FAF6F0",
+        "bg_entry": "#FFFFFF",
+        "bg_row": "#FFFFFF",
+        "bg_row_hover": "#F0EAE1",
+        "bg_row_active": "#E6B800",
+        "border_color": "#292524",
+        "accent": "#E6B800",
+        "accent_text": "#1C1917",
+        "coral": "#E0533C",
+        "mint": "#16A34A",
+        "sky": "#0284C7",
+        "lavender": "#9333EA",
+        "text_main": "#1C1917",
+        "text_muted": "#57534E",
+        "text_dim": "#78716C",
+    },
+    "dark_brutalist": {
+        "name": "Dark Obsidian Brutalist",
+        "bg_canvas": "#0D0E12",
+        "bg_card": "#16181F",
+        "bg_entry": "#1E212B",
+        "bg_row": "#1A1D26",
+        "bg_row_hover": "#252936",
+        "bg_row_active": "#CCFF00",
+        "border_color": "#CCFF00",
+        "accent": "#CCFF00",
+        "accent_text": "#000000",
+        "coral": "#FF3366",
+        "mint": "#00FFCC",
+        "sky": "#38BDF8",
+        "lavender": "#B55FE6",
+        "text_main": "#F4F4F6",
+        "text_muted": "#A0A5B5",
+        "text_dim": "#717688",
+    },
+}
+
 TRANSPARENT_KEY = "#000001"  # Chroma key for rounded frameless window on Windows
-
-BG_CANVAS       = "#FFFDF0"  # Warm ivory / cream base
-BG_CARD         = "#FFFDF5"  # Warm brutalist card surface
-BG_ENTRY        = "#FFFFFF"  # Crisp white input surface
-BG_ROW          = "#FFFFFF"  # Default item card row
-BG_ROW_HOVER    = "#FFF9E6"  # Light sunshine cream hover
-BG_ROW_ACTIVE   = "#FFE600"  # Vibrant sunshine yellow selected state
-
-BORDER_BLACK    = "#000000"  # Solid pitch-black brutalist border
 BORDER_WIDTH    = 3          # Heavy 3px brutalist border
 
-YELLOW_ACCENT   = "#FFE600"  # Signature Sunshine Mustard Yellow
-CORAL_ACCENT    = "#FF5757"  # Coral Red accent
-MINT_ACCENT     = "#22C55E"  # Mint Green status accent
-SKY_ACCENT      = "#38BDF8"  # Sky Blue accent
-LAVENDER_ACCENT = "#C084FC"  # Lavender pill accent
-
-TEXT_MAIN       = "#000000"  # 100% black text for maximum brutalist contrast
-TEXT_MUTED      = "#444444"  # Dark charcoal secondary
-TEXT_DIM        = "#666666"  # Faint label text
+# Default tokens fallback
+BG_CANVAS       = THEMES["neo_brutalist"]["bg_canvas"]
+BG_CARD         = THEMES["neo_brutalist"]["bg_card"]
+BG_ENTRY        = THEMES["neo_brutalist"]["bg_entry"]
+BG_ROW          = THEMES["neo_brutalist"]["bg_row"]
+BG_ROW_HOVER    = THEMES["neo_brutalist"]["bg_row_hover"]
+BG_ROW_ACTIVE   = THEMES["neo_brutalist"]["bg_row_active"]
+BORDER_BLACK    = THEMES["neo_brutalist"]["border_color"]
+YELLOW_ACCENT   = THEMES["neo_brutalist"]["accent"]
+CORAL_ACCENT    = THEMES["neo_brutalist"]["coral"]
+MINT_ACCENT     = THEMES["neo_brutalist"]["mint"]
+SKY_ACCENT      = THEMES["neo_brutalist"]["sky"]
+LAVENDER_ACCENT = THEMES["neo_brutalist"]["lavender"]
+TEXT_MAIN       = THEMES["neo_brutalist"]["text_main"]
+TEXT_MUTED      = THEMES["neo_brutalist"]["text_muted"]
+TEXT_DIM        = THEMES["neo_brutalist"]["text_dim"]
 
 
 # ─── Curated Actions & Automation Presets ─────────────────────────
@@ -203,23 +268,94 @@ class SpotlightUI(ctk.CTk):
         self._W = 840
         self._H_EXPANDED = 510
         self._H_EXEC     = 260
+        self._HUD_W      = 540
+        self._HUD_H      = 64
         self._current_h  = self._H_EXPANDED
 
         sw = self.winfo_screenwidth()
         sh = self.winfo_screenheight()
         self._pos_x = int(sw / 2 - self._W / 2)
         self._pos_y = int(sh * 0.20)
+        self._hud_x = int(sw / 2 - self._HUD_W / 2)
+        self._hud_y = 24
+        self.is_in_hud_mode = False
+        self.active_theme_key = "neo_brutalist"
+        self.current_theme = THEMES["neo_brutalist"]
         self.geometry(f"{self._W}x{self._H_EXPANDED}+{self._pos_x}+{self._pos_y}")
 
         # ── Main Floating Neo-Brutalist Card ──────────────────────
         self.card = ctk.CTkFrame(
             self,
-            fg_color=BG_CARD,
+            fg_color=self.current_theme["bg_card"],
             corner_radius=22,
             border_width=BORDER_WIDTH,
-            border_color=BORDER_BLACK,
+            border_color=self.current_theme["border_color"],
         )
         self.card.pack(fill="both", expand=True, padx=6, pady=6)
+
+        # ── Compact Running Popup HUD Container (Top of Screen) ──
+        self.hud_container = ctk.CTkFrame(self.card, fg_color="transparent")
+
+        self.hud_status_badge = ctk.CTkLabel(
+            self.hud_container,
+            text="⚡ RUNNING",
+            font=("Segoe UI", 11, "bold"),
+            text_color=self.current_theme["accent_text"],
+            fg_color=self.current_theme["accent"],
+            corner_radius=10,
+            padx=10,
+            pady=4,
+        )
+        self.hud_status_badge.pack(side="left", padx=(12, 10))
+
+        self.hud_text_box = ctk.CTkFrame(self.hud_container, fg_color="transparent")
+        self.hud_text_box.pack(side="left", fill="both", expand=True, padx=(0, 8))
+
+        self.hud_task_title = ctk.CTkLabel(
+            self.hud_text_box,
+            text="Task: Executing routine…",
+            font=("Segoe UI", 12, "bold"),
+            text_color=self.current_theme["text_main"],
+            anchor="w",
+        )
+        self.hud_task_title.pack(fill="x", pady=(2, 0))
+
+        self.hud_task_step = ctk.CTkLabel(
+            self.hud_text_box,
+            text="🔒 Grounding action on screen…",
+            font=("Segoe UI", 10, "bold"),
+            text_color=self.current_theme["text_muted"],
+            anchor="w",
+        )
+        self.hud_task_step.pack(fill="x", pady=(0, 2))
+
+        self.hud_timer_lbl = ctk.CTkLabel(
+            self.hud_container,
+            text="⏱ 0.0s",
+            font=("JetBrains Mono", 11, "bold"),
+            text_color=self.current_theme["accent_text"],
+            fg_color=self.current_theme["accent"],
+            corner_radius=8,
+            padx=8,
+            pady=3,
+        )
+        self.hud_timer_lbl.pack(side="right", padx=(4, 6))
+
+        self.hud_cancel_btn = ctk.CTkButton(
+            self.hud_container,
+            text="✕",
+            width=28,
+            height=28,
+            corner_radius=14,
+            font=("Segoe UI", 11, "bold"),
+            fg_color="transparent",
+            hover_color=self.current_theme["bg_row_hover"],
+            text_color=self.current_theme["text_main"],
+            border_width=1.5,
+            border_color=self.current_theme["border_color"],
+            command=self._cancel_running_task,
+        )
+        self.hud_cancel_btn.pack(side="right", padx=(2, 10))
 
         # ── Themed Neo-Brutalist Top Status Header ────────────────
         self.top_header = ctk.CTkFrame(self.card, fg_color="transparent", height=32)
@@ -526,21 +662,118 @@ class SpotlightUI(ctk.CTk):
             event_bus.subscribe(EVENT_VISUAL_THOUGHT, self._on_visual_thought)
 
         self._poll_toggle()
+        self._reload_theme_from_settings()
         self.withdraw()
+
+    # ── Theme Management ──────────────────────────────────────────
+    def apply_theme(self, theme_key: str):
+        if theme_key not in THEMES:
+            theme_key = "neo_brutalist"
+        self.active_theme_key = theme_key
+        t = THEMES[theme_key]
+        self.current_theme = t
+
+        # Update card container
+        self.card.configure(fg_color=t["bg_card"], border_color=t["border_color"])
+
+        # Update top header
+        self.title_badge.configure(text_color=t["text_main"])
+        self.status_pill.configure(fg_color=t["accent"], text_color=t["accent_text"])
+
+        # Update capsule search bar
+        self.capsule_bar.configure(fg_color=t["bg_entry"], border_color=t["border_color"])
+        self.plus_btn.configure(
+            fg_color=t["accent"],
+            text_color=t["accent_text"],
+            border_color=t["border_color"],
+            hover_color=t["bg_row_hover"],
+        )
+        self.search_entry.configure(
+            text_color=t["text_main"],
+            placeholder_text_color=t["text_muted"],
+        )
+        self.clear_btn.configure(
+            fg_color=t["bg_card"],
+            text_color=t["text_main"],
+            border_color=t["border_color"],
+        )
+        self.think_btn.configure(
+            fg_color=t["accent"] if self.think_mode else t["bg_entry"],
+            text_color=t["accent_text"] if self.think_mode else t["text_muted"],
+            border_color=t["border_color"],
+        )
+        self.beacon_btn.configure(
+            fg_color=t["accent"],
+            text_color=t["accent_text"],
+            border_color=t["border_color"],
+        )
+
+        # Update chips
+        for child in self.chips_frame.winfo_children():
+            if isinstance(child, ctk.CTkButton):
+                child.configure(
+                    fg_color=t["bg_card"],
+                    border_color=t["border_color"],
+                    text_color=t["text_main"],
+                    hover_color=t["accent"],
+                )
+
+        # Update category filters
+        for key, btn in self._filter_buttons.items():
+            is_active = (key == self.active_category)
+            btn.configure(
+                fg_color=t["accent"] if is_active else t["bg_card"],
+                border_color=t["border_color"],
+                text_color=t["accent_text"] if is_active else t["text_main"],
+                hover_color=t["accent"],
+            )
+
+        # Update HUD popup widgets
+        self.hud_container.configure(fg_color=t["bg_card"])
+        self.hud_status_badge.configure(fg_color=t["accent"], text_color=t["accent_text"])
+        self.hud_task_title.configure(text_color=t["text_main"])
+        self.hud_task_step.configure(text_color=t["text_muted"])
+        self.hud_timer_lbl.configure(fg_color=t["accent"], text_color=t["accent_text"])
+        self.hud_cancel_btn.configure(
+            fg_color=t["bg_card"],
+            border_color=t["border_color"],
+            text_color=t["text_main"],
+            hover_color=t["bg_row_hover"],
+        )
+
+        # Update footer labels
+        for child in self.footer.winfo_children():
+            if isinstance(child, ctk.CTkLabel):
+                child.configure(text_color=t["text_main"])
+
+        # Update suggestions list
+        self._update_suggestions()
+
+    def _reload_theme_from_settings(self):
+        try:
+            from core.config_manager import get_setting
+            theme_key = get_setting("spotlight_theme", "neo_brutalist")
+            if theme_key != self.active_theme_key:
+                self.apply_theme(theme_key)
+        except Exception:
+            pass
 
     # ── Category Filtering ─────────────────────────────────────────
     def _set_category(self, category_key: str):
         self.active_category = category_key
+        t = self.current_theme
         for key, btn in self._filter_buttons.items():
             if key == category_key:
                 btn.configure(
-                    fg_color=YELLOW_ACCENT,
-                    text_color=TEXT_MAIN,
+                    fg_color=t["accent"],
+                    text_color=t["accent_text"],
+                    border_color=t["border_color"],
                 )
             else:
                 btn.configure(
-                    fg_color="#FFFFFF",
-                    text_color=TEXT_MAIN,
+                    fg_color=t["bg_card"],
+                    text_color=t["text_main"],
+                    border_color=t["border_color"],
                 )
         self._update_suggestions()
 
@@ -551,15 +784,18 @@ class SpotlightUI(ctk.CTk):
 
     def _toggle_think_mode(self):
         self.think_mode = not self.think_mode
+        t = self.current_theme
         if self.think_mode:
             self.think_btn.configure(
-                fg_color=YELLOW_ACCENT,
-                text_color=TEXT_MAIN,
+                fg_color=t["accent"],
+                text_color=t["accent_text"],
+                border_color=t["border_color"],
             )
         else:
             self.think_btn.configure(
-                fg_color="#E5E7EB",
-                text_color=TEXT_MUTED,
+                fg_color=t["bg_entry"],
+                text_color=t["text_muted"],
+                border_color=t["border_color"],
             )
 
     def _on_chip_click(self, cmd: str):
@@ -620,18 +856,20 @@ class SpotlightUI(ctk.CTk):
                 "command": self.search_var.get().strip(),
                 "subtitle": "Deconstruct customer prompt & run local automation pipeline",
                 "badge": "Custom",
-                "badge_color": YELLOW_ACCENT,
+                "badge_color": self.current_theme["accent"],
             }
             filtered = [custom_item]
 
+        t = self.current_theme
         for idx, item in enumerate(filtered[:5]):
+            is_first = (idx == 0)
             row_frame = ctk.CTkFrame(
                 self.suggestions_frame,
-                fg_color=BG_ROW_ACTIVE if idx == 0 else BG_ROW,
+                fg_color=t["bg_row_active"] if is_first else t["bg_row"],
                 corner_radius=12,
                 height=52,
-                border_width=2 if idx == 0 else 1.5,
-                border_color=BORDER_BLACK,
+                border_width=2 if is_first else 1.5,
+                border_color=t["border_color"],
             )
             row_frame.pack(fill="x", pady=2)
             row_frame.pack_propagate(False)
@@ -653,7 +891,7 @@ class SpotlightUI(ctk.CTk):
                 text_block,
                 text=item["title"],
                 font=("Segoe UI", 13, "bold"),
-                text_color=TEXT_MAIN,
+                text_color=t["accent_text"] if is_first else t["text_main"],
                 anchor="w",
             )
             title_lbl.pack(fill="x")
@@ -662,7 +900,7 @@ class SpotlightUI(ctk.CTk):
                 text_block,
                 text=item["subtitle"],
                 font=("Segoe UI", 11),
-                text_color=TEXT_MUTED,
+                text_color=t["text_muted"],
                 anchor="w",
             )
             subtitle_lbl.pack(fill="x")
@@ -675,8 +913,8 @@ class SpotlightUI(ctk.CTk):
                 right_frame,
                 text=item.get("badge", "Action"),
                 font=("Segoe UI", 10, "bold"),
-                fg_color=item.get("badge_color", YELLOW_ACCENT),
-                text_color=TEXT_MAIN,
+                fg_color=item.get("badge_color", t["accent"]),
+                text_color=t["accent_text"],
                 corner_radius=6,
                 padx=8,
                 pady=1,
@@ -687,7 +925,7 @@ class SpotlightUI(ctk.CTk):
                 right_frame,
                 text="↵ RUN",
                 font=("Segoe UI", 11, "bold"),
-                text_color=TEXT_MAIN,
+                text_color=t["accent_text"] if is_first else t["text_main"],
             )
             run_lbl.pack(side="right")
 
@@ -709,13 +947,17 @@ class SpotlightUI(ctk.CTk):
     def _select_row(self, index: int):
         if not self._row_widgets:
             return
+        t = self.current_theme
         self.selected_index = max(0, min(index, len(self._row_widgets) - 1))
         for idx, rw in enumerate(self._row_widgets):
             is_active = (idx == self.selected_index)
             rw["row"].configure(
-                fg_color=BG_ROW_ACTIVE if is_active else BG_ROW,
+                fg_color=t["bg_row_active"] if is_active else t["bg_row"],
+                border_color=t["border_color"],
                 border_width=2 if is_active else 1.5,
             )
+            rw["title"].configure(text_color=t["accent_text"] if is_active else t["text_main"])
+            rw["run"].configure(text_color=t["accent_text"] if is_active else t["text_main"])
 
     def _resize_for_content(self, row_count: int):
         header_h = 76
@@ -782,14 +1024,6 @@ class SpotlightUI(ctk.CTk):
         self._start_time = time.time()
         self._show_execution_view(command)
 
-        is_vision = any(w in command.lower() for w in ("click", "ground", "save changes", "find on screen"))
-        if is_vision:
-            self.hide_spotlight()
-            try:
-                self.update()
-            except Exception:
-                pass
-
         if HAS_EVENT_BUS:
             threading.Thread(
                 target=lambda: event_bus.emit(EVENT_TASK_START, {"command": command}),
@@ -799,24 +1033,112 @@ class SpotlightUI(ctk.CTk):
             threading.Thread(target=self._mock_run, args=(command,), daemon=True).start()
 
     def _show_execution_view(self, command: str):
-        self.browse_container.pack_forget()
+        t = self.current_theme
+        disp_cmd = command if len(command) <= 42 else command[:39] + "…"
 
-        disp_cmd = command if len(command) <= 52 else command[:49] + "…"
-        self.exec_title_lbl.configure(text=f"⚡ Executing: {disp_cmd}")
-        self.exec_step_lbl.configure(text="🔒 Grounding action on screen…")
-        self.status_pill.configure(text="🔥 EXECUTING ROUTINE", fg_color=YELLOW_ACCENT)
-
-        self.exec_drawer.pack(fill="both", expand=True, padx=16, pady=(6, 12), before=self.footer)
-        self._resize_window(self._H_EXEC)
+        self.is_in_hud_mode = True
         self.search_entry.configure(state="disabled")
+
+        # Configure Running HUD widgets
+        self.hud_task_title.configure(text=f"Task: {disp_cmd}", text_color=t["text_main"])
+        self.hud_task_step.configure(text="🔒 Grounding action on screen…", text_color=t["text_muted"])
+        self.hud_status_badge.configure(text="⚡ RUNNING", fg_color=t["accent"], text_color=t["accent_text"])
+        self.hud_timer_lbl.configure(text="⏱ 0.0s", fg_color=t["accent"], text_color=t["accent_text"])
+
+        # Also configure full exec drawer labels
+        self.exec_title_lbl.configure(text=f"⚡ Executing: {disp_cmd}", text_color=t["text_main"])
+        self.exec_step_lbl.configure(text="🔒 Grounding action on screen…", text_color=t["text_main"])
+        self.status_pill.configure(text="🔥 EXECUTING ROUTINE", fg_color=t["accent"], text_color=t["accent_text"])
+
+        # Hide full modal views
+        self.top_header.pack_forget()
+        self.capsule_bar.pack_forget()
+        self.browse_container.pack_forget()
+        self.footer.pack_forget()
+        self.exec_drawer.pack_forget()
+
+        # Mount HUD container inside card
+        self.hud_container.pack(fill="both", expand=True, padx=4, pady=4)
+
+        # Smooth conversion animation to small running popup at top of screen
+        self._animate_geometry_transition(to_hud=True)
+
         self._tick_timer()
+
+    def _cancel_running_task(self):
+        self.is_processing = False
+        t = self.current_theme
+        self.hud_status_badge.configure(text="⏹ STOPPED", fg_color=t["coral"], text_color="#fff")
+        self.hud_task_step.configure(text="Operation stopped by user.")
+        self.after(500, self._restore_search_view)
+
+    def _animate_geometry_transition(self, to_hud: bool, on_complete=None):
+        """
+        Smooth conversion animation between:
+        - Center expanded modal: (self._W, self._H_EXPANDED, self._pos_x, self._pos_y)
+        - Top running popup HUD: (self._HUD_W, self._HUD_H, self._hud_x, self._hud_y)
+        """
+        sw = self.winfo_screenwidth()
+        sh = self.winfo_screenheight()
+
+        target_w = self._HUD_W if to_hud else self._W
+        target_h = self._HUD_H if to_hud else self._H_EXPANDED
+        target_x = int(sw / 2 - target_w / 2)
+        target_y = self._hud_y if to_hud else int(sh * 0.20)
+
+        try:
+            start_w = self.winfo_width()
+            start_h = self.winfo_height()
+            start_x = self.winfo_x()
+            start_y = self.winfo_y()
+        except Exception:
+            start_w = self._W if to_hud else self._HUD_W
+            start_h = self._H_EXPANDED if to_hud else self._HUD_H
+            start_x = self._pos_x if to_hud else target_x
+            start_y = self._pos_y if to_hud else target_y
+
+        if start_w < 50 or start_h < 30:
+            start_w = self._W if to_hud else self._HUD_W
+            start_h = self._H_EXPANDED if to_hud else self._HUD_H
+            start_x = self._pos_x if to_hud else target_x
+            start_y = self._pos_y if to_hud else target_y
+
+        frames = 10
+        delay_ms = 12
+
+        def _step(i=0):
+            if i <= frames:
+                t = i / frames
+                # Cubic ease-out curve
+                ease = 1.0 - (1.0 - t) ** 3
+                cur_w = int(start_w + (target_w - start_w) * ease)
+                cur_h = int(start_h + (target_h - start_h) * ease)
+                cur_x = int(start_x + (target_x - start_x) * ease)
+                cur_y = int(start_y + (target_y - start_y) * ease)
+                try:
+                    self.geometry(f"{cur_w}x{cur_h}+{cur_x}+{cur_y}")
+                except Exception:
+                    pass
+                if i < frames:
+                    self.after(delay_ms, lambda: _step(i + 1))
+                else:
+                    try:
+                        self.geometry(f"{target_w}x{target_h}+{target_x}+{target_y}")
+                    except Exception:
+                        pass
+                    if on_complete:
+                        on_complete()
+
+        _step(0)
 
     def _tick_timer(self):
         if not self.is_processing:
             return
         if self._start_time:
             elapsed = time.time() - self._start_time
-            self.exec_timer_lbl.configure(text=f"⏱ {elapsed:.1f}s")
+            lbl_text = f"⏱ {elapsed:.1f}s"
+            self.exec_timer_lbl.configure(text=lbl_text)
+            self.hud_timer_lbl.configure(text=lbl_text)
         self._timer_job = self.after(100, self._tick_timer)
 
     def _mock_run(self, query):
@@ -858,12 +1180,14 @@ class SpotlightUI(ctk.CTk):
 
             if kind == "step":
                 self.exec_step_lbl.configure(text=data)
+                self.hud_task_step.configure(text=str(data)[:55])
             elif kind == "visual_thought":
                 thought = (data or {}).get("thought", "")
                 diff_pct = (data or {}).get("diff_pct", 0.0)
                 if thought:
                     self.visual_thought_lbl.configure(text=f"Thought: {thought}")
                     self.visual_delta_badge.configure(text=f"Delta: {diff_pct}%")
+                    self.hud_task_step.configure(text=f"🧠 {thought[:48]}…")
             elif kind == "success":
                 self._handle_pipeline_success(data)
             elif kind == "failure":
@@ -871,27 +1195,54 @@ class SpotlightUI(ctk.CTk):
 
     def _handle_pipeline_success(self, data):
         self.is_processing = False
+        t = self.current_theme
         summary = data.get("summary", "Task finished")
         roi = data.get("roi", "Saved 3.0m | $0.01")
 
         self.exec_step_lbl.configure(text=f"✅ {summary}")
-        self.status_pill.configure(text="✅ COMPLETED", fg_color=MINT_ACCENT)
-        self.after(1600, self._restore_search_view)
-        _show_ctk_toast(self, f"🎉 Routine Finished: {summary} • {roi}")
+        self.status_pill.configure(text="✅ COMPLETED", fg_color=t["mint"], text_color="#000")
+
+        # Update running popup HUD at top of screen
+        self.hud_status_badge.configure(text="✅ DONE", fg_color=t["mint"], text_color="#000")
+        self.hud_task_title.configure(text=f"✅ {summary[:38]}")
+        self.hud_task_step.configure(text=f"🎉 {roi}")
+
+        self.after(1800, self._restore_search_view)
+        _show_ctk_toast(self, f"🎉 Routine Finished: {summary} • {roi}", color=t["mint"])
 
     def _handle_pipeline_failure(self, error_msg):
         self.is_processing = False
+        t = self.current_theme
         self.exec_step_lbl.configure(text=f"❌ Failed: {error_msg}")
-        self.status_pill.configure(text="❌ FAILED", fg_color=CORAL_ACCENT)
+        self.status_pill.configure(text="❌ FAILED", fg_color=t["coral"], text_color="#fff")
+
+        # Update running popup HUD at top of screen
+        self.hud_status_badge.configure(text="❌ ERROR", fg_color=t["coral"], text_color="#fff")
+        self.hud_task_title.configure(text="Automation Routine Error")
+        self.hud_task_step.configure(text=str(error_msg)[:48])
+
         self.after(2200, self._restore_search_view)
-        _show_ctk_toast(self, f"⚠ Automation Error: {error_msg}", color=CORAL_ACCENT)
+        _show_ctk_toast(self, f"⚠ Automation Error: {error_msg}", color=t["coral"])
 
     def _restore_search_view(self):
+        if not self.is_in_hud_mode:
+            return
+        self._animate_geometry_transition(to_hud=False, on_complete=self._finish_restore_search_view)
+
+    def _finish_restore_search_view(self):
+        self.is_in_hud_mode = False
+        t = self.current_theme
+
+        self.hud_container.pack_forget()
         self.exec_drawer.pack_forget()
-        self.browse_container.pack(fill="both", expand=True, padx=0, pady=0, before=self.footer)
+
+        self.top_header.pack(fill="x", padx=20, pady=(12, 6))
+        self.capsule_bar.pack(fill="x", padx=16, pady=(2, 8))
+        self.footer.pack(fill="x", side="bottom", padx=20, pady=(4, 10))
+        self.browse_container.pack(fill="both", expand=True, padx=0, pady=0)
 
         self.search_entry.configure(state="normal")
-        self.status_pill.configure(text="⚡ SYSTEM READY", fg_color=YELLOW_ACCENT)
+        self.status_pill.configure(text="⚡ SYSTEM READY", fg_color=t["accent"], text_color=t["accent_text"])
         self._update_suggestions()
 
     # ── Hotkey Poller & Toggle ─────────────────────────────────────
@@ -921,6 +1272,17 @@ class SpotlightUI(ctk.CTk):
     def show_spotlight(self):
         """Smooth slide-in and opacity fade-in animation."""
         if self.is_visible or self._is_animating:
+            return
+
+        self._reload_theme_from_settings()
+
+        if self.is_in_hud_mode:
+            self.overrideredirect(True)
+            self.deiconify()
+            self.attributes("-topmost", True)
+            self.attributes("-alpha", 0.98)
+            self.lift()
+            self.is_visible = True
             return
 
         self._is_animating = True
@@ -965,6 +1327,10 @@ class SpotlightUI(ctk.CTk):
 
     def hide_spotlight(self):
         """Smooth slide-up and opacity fade-out animation."""
+        if self.is_in_hud_mode:
+            # Running HUD popup remains visible on top of screen while task is running
+            return
+
         if not self.is_visible or self._is_animating:
             self.withdraw()
             self.is_visible = False

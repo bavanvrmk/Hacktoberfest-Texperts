@@ -8,8 +8,14 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <script>
+        (function() {
+            const saved = localStorage.getItem('shadow_theme') || '{{ (settings.spotlight_theme if settings else "neo_brutalist") or "neo_brutalist" }}';
+            if (saved) document.documentElement.setAttribute('data-theme', saved);
+        })();
+    </script>
     <style>
-        :root {
+        :root, [data-theme="neo_brutalist"] {
             /* Authentic Neo-Brutalist Color System */
             --bg-canvas: #FFFDF0;
             --bg-card: #FFFFFF;
@@ -26,9 +32,88 @@
 
             --text-main: #000000;
             --text-muted: #555555;
+            --dot-color: #000000;
             --radius-card: 20px;
             --radius-btn: 12px;
             --radius-pill: 9999px;
+            --input-bg: #FFFFFF;
+            --hover-bg: #FFF9E6;
+        }
+
+        [data-theme="retro_ivory"] {
+            --bg-canvas: #F5EFEB;
+            --bg-card: #FAF6F0;
+            --bg-accent-yellow: #E6B800;
+            --bg-accent-coral: #E0533C;
+            --bg-accent-mint: #16A34A;
+            --bg-accent-sky: #0284C7;
+            --bg-accent-lavender: #9333EA;
+
+            --border-black: #292524;
+            --shadow-hard: 4px 4px 0px #292524;
+            --shadow-hard-lg: 6px 6px 0px #292524;
+            --shadow-hard-sm: 2px 2px 0px #292524;
+
+            --text-main: #1C1917;
+            --text-muted: #57534E;
+            --dot-color: #78716C;
+            --radius-card: 20px;
+            --radius-btn: 12px;
+            --radius-pill: 9999px;
+            --input-bg: #FFFFFF;
+            --hover-bg: #EFE8DC;
+        }
+
+        [data-theme="dark_brutalist"] {
+            --bg-canvas: #0D0E12;
+            --bg-card: #16181F;
+            --bg-accent-yellow: #CCFF00;
+            --bg-accent-coral: #FF3366;
+            --bg-accent-mint: #00FFCC;
+            --bg-accent-sky: #38BDF8;
+            --bg-accent-lavender: #B55FE6;
+
+            --border-black: #CCFF00;
+            --shadow-hard: 4px 4px 0px #000000;
+            --shadow-hard-lg: 6px 6px 0px #000000;
+            --shadow-hard-sm: 2px 2px 0px #000000;
+
+            --text-main: #F4F4F6;
+            --text-muted: #A0A5B5;
+            --dot-color: #272B38;
+            --radius-card: 20px;
+            --radius-btn: 12px;
+            --radius-pill: 9999px;
+            --input-bg: #1E212B;
+            --hover-bg: #232733;
+        }
+
+        [data-theme="dark_brutalist"] .nav-item:hover,
+        [data-theme="dark_brutalist"] .metric-card,
+        [data-theme="dark_brutalist"] .workflow-card,
+        [data-theme="dark_brutalist"] .editor-pane,
+        [data-theme="dark_brutalist"] .library-pane,
+        [data-theme="dark_brutalist"] .step-card {
+            background-color: var(--bg-card);
+        }
+
+        [data-theme="dark_brutalist"] .nav-item:hover {
+            background-color: #232733;
+            color: #FFF;
+        }
+
+        [data-theme="dark_brutalist"] input,
+        [data-theme="dark_brutalist"] select,
+        [data-theme="dark_brutalist"] textarea {
+            background-color: var(--input-bg) !important;
+            color: var(--text-main) !important;
+            border-color: #3F4455 !important;
+        }
+
+        [data-theme="dark_brutalist"] .btn-secondary {
+            background-color: #1E212B;
+            color: #F4F4F6;
+            border-color: #4A5168;
         }
 
         * {
@@ -40,7 +125,7 @@
 
         body {
             background-color: var(--bg-canvas);
-            background-image: radial-gradient(#000000 1.5px, transparent 1.5px);
+            background-image: radial-gradient(var(--dot-color, #000000) 1.5px, transparent 1.5px);
             background-size: 24px 24px;
             color: var(--text-main);
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
