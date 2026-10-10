@@ -57,8 +57,6 @@ _APP_ALIASES = {
     "chrome": "Google Chrome",
     "google chrome": "Google Chrome",
     "edge": "Microsoft Edge",
-    "browser": "Google Chrome",
-    "web browser": "Google Chrome",
     "firefox": "Firefox",
     "brave": "Brave",
     "spotify": "Spotify",
@@ -254,6 +252,21 @@ def list_start_apps():
 def launch_app(app_name: str, llm_client=None) -> str:
     """Start an installed app or web app fallback using fuzzy and AI matching."""
     key = app_name.strip().lower()
+
+    # Generic browser request -> Open default system browser without forcing Chrome
+    if key in ("browser", "web browser", "the browser", "default browser", "internet browser"):
+        webbrowser.open("https://google.com")
+        print(f"[Launcher] Launched default system browser.")
+        time.sleep(1.0)
+        return "Default Browser"
+
+    # Direct URL or website -> Open in default browser
+    if key.startswith("http://") or key.startswith("https://") or (key.startswith("www.") and "." in key):
+        url = key if key.startswith("http") else f"https://{key}"
+        webbrowser.open(url)
+        print(f"[Launcher] Opened website '{url}' via default system browser.")
+        time.sleep(1.0)
+        return f"Web: {url}"
 
     # Builtin win32 binaries
     builtin = _BUILTIN_APPS.get(key) or _BUILTIN_APPS.get(_APP_ALIASES.get(key, "").lower())

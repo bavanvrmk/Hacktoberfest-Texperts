@@ -44,6 +44,26 @@ except ImportError:
         return default
 
 
+def _enable_dwm_rounded_corners(window):
+    """Applies native hardware DWM anti-aliased rounded corners and framing on Windows."""
+    if sys.platform.startswith("win"):
+        try:
+            import ctypes
+            window.update_idletasks()
+            hwnd = ctypes.windll.user32.GetAncestor(window.winfo_id(), 2)
+            if hwnd:
+                # DWMWA_WINDOW_CORNER_PREFERENCE = 33, DWMWCP_ROUND = 2
+                pref = ctypes.c_int(2)
+                ctypes.windll.dwmapi.DwmSetWindowAttribute(
+                    hwnd, 33, ctypes.byref(pref), 4
+                )
+                margins = (ctypes.c_int * 4)(1, 1, 1, 1)
+                ctypes.windll.dwmapi.DwmExtendFrameIntoClientArea(hwnd, ctypes.byref(margins))
+                ctypes.windll.user32.SetWindowPos(hwnd, 0, 0, 0, 0, 0, 0x0027)
+        except Exception:
+            pass
+
+
 # ─── Multi-Theme Palettes ──────────────────────────────────────────
 THEMES = {
     "neo_brutalist": {
@@ -86,27 +106,27 @@ THEMES = {
     },
     "dark_brutalist": {
         "name": "Dark Obsidian Brutalist",
-        "bg_canvas": "#0D0E12",
-        "bg_card": "#16181F",
-        "bg_entry": "#1E212B",
-        "bg_row": "#1A1D26",
-        "bg_row_hover": "#252936",
-        "bg_row_active": "#CCFF00",
-        "border_color": "#CCFF00",
-        "accent": "#CCFF00",
+        "bg_canvas": "#0B0C10",
+        "bg_card": "#14161F",
+        "bg_entry": "#1B1E29",
+        "bg_row": "#161922",
+        "bg_row_hover": "#212635",
+        "bg_row_active": "#282E40",
+        "border_color": "#2C3142",
+        "accent": "#FFE600",
         "accent_text": "#000000",
-        "coral": "#FF3366",
-        "mint": "#00FFCC",
+        "coral": "#FF4D6D",
+        "mint": "#10B981",
         "sky": "#38BDF8",
-        "lavender": "#B55FE6",
-        "text_main": "#F4F4F6",
-        "text_muted": "#A0A5B5",
-        "text_dim": "#717688",
+        "lavender": "#A855F7",
+        "text_main": "#F8FAFC",
+        "text_muted": "#94A3B8",
+        "text_dim": "#64748B",
     },
 }
 
-TRANSPARENT_KEY = "#000001"  # Chroma key for rounded frameless window on Windows
-BORDER_WIDTH    = 3          # Heavy 3px brutalist border
+TRANSPARENT_KEY = "#000001"  # Chroma key fallback
+BORDER_WIDTH    = 2          # Sleek modern brutalist 2px border
 
 # Default tokens fallback
 BG_CANVAS       = THEMES["neo_brutalist"]["bg_canvas"]
@@ -188,11 +208,11 @@ DEFAULT_ACTIONS = [
         "category": "TELEMETRY",
         "icon": "📊",
         "title": "Launch Live ROI & Financial Engine",
-        "command": "Open Chrome and navigate to http://127.0.0.1:8000",
+        "command": "Open http://127.0.0.1:8000 in default browser",
         "subtitle": "Real-time Telemetry, PII Audit Logs & Cost Metrics",
         "badge": "Browser",
         "badge_color": MINT_ACCENT,
-        "keywords": ["roi", "dashboard", "telemetry", "chrome", "cost", "metrics", "financial"],
+        "keywords": ["roi", "dashboard", "telemetry", "browser", "cost", "metrics", "financial"],
     },
     {
         "id": "notepad_notes",
@@ -234,13 +254,13 @@ SUGGESTION_CHIPS = [
     ("👁 Summarize Screen", "read contents on the screen and summarize"),
     ("📧 Outlook Evaluator", "Send an email using outlook to jp_vedaj@cb.amrita.edu about how good my hackathon demo was"),
     ("🐦 Twitter / X", "Open Twitter"),
-    ("📊 Live ROI", "Open Chrome and navigate to http://127.0.0.1:8000"),
+    ("📊 Live ROI", "Open http://127.0.0.1:8000 in default browser"),
 ]
 
 CATEGORY_TABS = [
     ("ALL", "All Presets"),
     ("APPS", "💬 Apps"),
-    ("VISION", "👁 Vision AI"),
+    ("VISION", "👁 Vision"),
     ("EMAIL", "📧 Email"),
     ("TELEMETRY", "📊 ROI"),
     ("SYSTEM", "⚙ System"),
@@ -257,19 +277,11 @@ class SpotlightUI(ctk.CTk):
         self.attributes("-topmost", True)
         self.attributes("-alpha", 0.0)
 
-        if sys.platform.startswith("win"):
-            try:
-                self.attributes("-transparentcolor", TRANSPARENT_KEY)
-            except Exception:
-                pass
-        self.configure(fg_color=TRANSPARENT_KEY)
-        ctk.set_appearance_mode("light")
-
         self._W = 840
-        self._H_EXPANDED = 510
-        self._H_EXEC     = 260
-        self._HUD_W      = 540
-        self._HUD_H      = 64
+        self._H_EXPANDED = 490
+        self._H_EXEC     = 240
+        self._HUD_W      = 520
+        self._HUD_H      = 54
         self._current_h  = self._H_EXPANDED
 
         sw = self.winfo_screenwidth()
@@ -281,30 +293,33 @@ class SpotlightUI(ctk.CTk):
         self.is_in_hud_mode = False
         self.active_theme_key = "neo_brutalist"
         self.current_theme = THEMES["neo_brutalist"]
+        self.configure(fg_color=self.current_theme["bg_card"])
+        ctk.set_appearance_mode("light")
         self.geometry(f"{self._W}x{self._H_EXPANDED}+{self._pos_x}+{self._pos_y}")
 
-        # ── Main Floating Neo-Brutalist Card ──────────────────────
+        # ── Main Floating Card Container (Smooth Edge Zero-Margin) ──
         self.card = ctk.CTkFrame(
             self,
             fg_color=self.current_theme["bg_card"],
-            corner_radius=22,
+            corner_radius=18,
             border_width=BORDER_WIDTH,
             border_color=self.current_theme["border_color"],
         )
-        self.card.pack(fill="both", expand=True, padx=6, pady=6)
+        self.card.pack(fill="both", expand=True, padx=0, pady=0)
+        _enable_dwm_rounded_corners(self)
 
-        # ── Compact Running Popup HUD Container (Top of Screen) ──
+        # ── Minimalist Running Popup HUD Container (Top of Screen) ──
         self.hud_container = ctk.CTkFrame(self.card, fg_color="transparent")
 
         self.hud_status_badge = ctk.CTkLabel(
             self.hud_container,
             text="⚡ RUNNING",
-            font=("Segoe UI", 11, "bold"),
+            font=("Segoe UI", 10, "bold"),
             text_color=self.current_theme["accent_text"],
             fg_color=self.current_theme["accent"],
-            corner_radius=10,
-            padx=10,
-            pady=4,
+            corner_radius=8,
+            padx=8,
+            pady=3,
         )
         self.hud_status_badge.pack(side="left", padx=(12, 10))
 
@@ -314,40 +329,40 @@ class SpotlightUI(ctk.CTk):
         self.hud_task_title = ctk.CTkLabel(
             self.hud_text_box,
             text="Task: Executing routine…",
-            font=("Segoe UI", 12, "bold"),
+            font=("Segoe UI", 11, "bold"),
             text_color=self.current_theme["text_main"],
             anchor="w",
         )
-        self.hud_task_title.pack(fill="x", pady=(2, 0))
+        self.hud_task_title.pack(fill="x", pady=(1, 0))
 
         self.hud_task_step = ctk.CTkLabel(
             self.hud_text_box,
             text="🔒 Grounding action on screen…",
-            font=("Segoe UI", 10, "bold"),
+            font=("Segoe UI", 9),
             text_color=self.current_theme["text_muted"],
             anchor="w",
         )
-        self.hud_task_step.pack(fill="x", pady=(0, 2))
+        self.hud_task_step.pack(fill="x", pady=(0, 1))
 
         self.hud_timer_lbl = ctk.CTkLabel(
             self.hud_container,
             text="⏱ 0.0s",
-            font=("JetBrains Mono", 11, "bold"),
+            font=("JetBrains Mono", 10, "bold"),
             text_color=self.current_theme["accent_text"],
             fg_color=self.current_theme["accent"],
-            corner_radius=8,
-            padx=8,
-            pady=3,
+            corner_radius=6,
+            padx=6,
+            pady=2,
         )
         self.hud_timer_lbl.pack(side="right", padx=(4, 6))
 
         self.hud_cancel_btn = ctk.CTkButton(
             self.hud_container,
             text="✕",
-            width=28,
-            height=28,
-            corner_radius=14,
-            font=("Segoe UI", 11, "bold"),
+            width=24,
+            height=24,
+            corner_radius=12,
+            font=("Segoe UI", 10, "bold"),
             fg_color="transparent",
             hover_color=self.current_theme["bg_row_hover"],
             text_color=self.current_theme["text_main"],
@@ -357,71 +372,78 @@ class SpotlightUI(ctk.CTk):
         )
         self.hud_cancel_btn.pack(side="right", padx=(2, 10))
 
-        # ── Themed Neo-Brutalist Top Status Header ────────────────
-        self.top_header = ctk.CTkFrame(self.card, fg_color="transparent", height=32)
-        self.top_header.pack(fill="x", padx=20, pady=(12, 6))
+        # ── Sleek Minimalist Micro-Header ─────────────────────────
+        self.top_header = ctk.CTkFrame(self.card, fg_color="transparent", height=22)
+        self.top_header.pack(fill="x", padx=18, pady=(10, 4))
 
         self.title_badge = ctk.CTkLabel(
             self.top_header,
-            text="★ SHADOW SPOTLIGHT ★",
-            font=("Segoe UI", 12, "bold"),
-            text_color=TEXT_MAIN,
+            text="SHADOW",
+            font=("Segoe UI", 10, "bold"),
+            text_color=self.current_theme["text_dim"],
         )
         self.title_badge.pack(side="left")
 
         self.status_pill = ctk.CTkLabel(
             self.top_header,
-            text="⚡ SYSTEM READY",
-            font=("Segoe UI", 11, "bold"),
-            text_color=TEXT_MAIN,
-            fg_color=YELLOW_ACCENT,
-            corner_radius=8,
-            padx=10,
-            pady=2,
+            text="● READY",
+            font=("Segoe UI", 10, "bold"),
+            text_color=self.current_theme["mint"],
+            fg_color="transparent",
+            padx=4,
+            pady=0,
         )
-        self.status_pill.pack(side="right")
+        self.status_pill.pack(side="left", padx=(6, 0))
 
-        # ── Neo-Brutalist Search Capsule Bar ──────────────────────
+        self.shortcut_hint = ctk.CTkLabel(
+            self.top_header,
+            text="Ctrl+T Theme  ·  Esc Dismiss",
+            font=("Segoe UI", 9),
+            text_color=self.current_theme["text_dim"],
+        )
+        self.shortcut_hint.pack(side="right")
+
+        # ── Streamlined Search Capsule Bar ────────────────────────
         self.capsule_bar = ctk.CTkFrame(
             self.card,
-            fg_color=BG_ENTRY,
-            corner_radius=16,
-            height=50,
-            border_width=2,
-            border_color=BORDER_BLACK,
+            fg_color=self.current_theme["bg_entry"],
+            corner_radius=14,
+            height=46,
+            border_width=BORDER_WIDTH,
+            border_color=self.current_theme["border_color"],
         )
         self.capsule_bar.pack(fill="x", padx=16, pady=(2, 8))
         self.capsule_bar.pack_propagate(False)
 
-        # Left (+) Action Menu Pill Button (From Reference Image)
+        # Left (+) Action Menu Pill Button
         self.plus_btn = ctk.CTkButton(
             self.capsule_bar,
             text="+",
-            width=34,
-            height=34,
-            corner_radius=17,
-            font=("Segoe UI", 18, "bold"),
-            fg_color=YELLOW_ACCENT,
-            hover_color="#FACC15",
-            text_color=TEXT_MAIN,
-            border_width=2,
-            border_color=BORDER_BLACK,
+            width=30,
+            height=30,
+            corner_radius=15,
+            font=("Segoe UI", 16, "bold"),
+            fg_color=self.current_theme["accent"],
+            hover_color=self.current_theme["bg_row_hover"],
+            text_color=self.current_theme["accent_text"],
+            border_width=1.5,
+            border_color=self.current_theme["border_color"],
             command=self._on_plus_click,
         )
-        self.plus_btn.pack(side="left", padx=(8, 8))
+        self.plus_btn.pack(side="left", padx=(6, 6))
 
         # Center Search Entry Field
         self.search_var = ctk.StringVar()
         self.search_entry = ctk.CTkEntry(
             self.capsule_bar,
             textvariable=self.search_var,
-            height=42,
-            font=("Segoe UI", 15, "bold"),
-            placeholder_text="Ask anything, describe task, or launch routine…",
-            placeholder_text_color=TEXT_MUTED,
+            height=38,
+            font=("Segoe UI", 13, "bold"),
+            placeholder_text="Type intent, task, or website URL…",
+            placeholder_text_color=self.current_theme["text_muted"],
             border_width=0,
             fg_color="transparent",
-            text_color=TEXT_MAIN,
+            text_color=self.current_theme["text_main"],
         )
         self.search_entry.pack(side="left", fill="x", expand=True, padx=(0, 6))
 
@@ -429,15 +451,15 @@ class SpotlightUI(ctk.CTk):
         self.clear_btn = ctk.CTkButton(
             self.capsule_bar,
             text="✕",
-            width=26,
-            height=26,
-            corner_radius=13,
-            font=("Segoe UI", 11, "bold"),
-            fg_color="#F3F4F6",
+            width=24,
+            height=24,
+            corner_radius=12,
+            font=("Segoe UI", 10, "bold"),
+            fg_color=self.current_theme["bg_card"],
             border_width=1,
-            border_color=BORDER_BLACK,
-            hover_color="#E5E7EB",
-            text_color=TEXT_MAIN,
+            border_color=self.current_theme["border_color"],
+            hover_color=self.current_theme["bg_row_hover"],
+            text_color=self.current_theme["text_main"],
             command=self._clear_search,
         )
 
@@ -446,15 +468,15 @@ class SpotlightUI(ctk.CTk):
         self.think_btn = ctk.CTkButton(
             self.capsule_bar,
             text="🧠 Think",
-            width=76,
-            height=32,
-            corner_radius=12,
-            font=("Segoe UI", 11, "bold"),
-            fg_color=YELLOW_ACCENT,
-            border_width=2,
-            border_color=BORDER_BLACK,
-            hover_color="#FACC15",
-            text_color=TEXT_MAIN,
+            width=68,
+            height=28,
+            corner_radius=10,
+            font=("Segoe UI", 10, "bold"),
+            fg_color=self.current_theme["accent"],
+            border_width=1.5,
+            border_color=self.current_theme["border_color"],
+            hover_color=self.current_theme["bg_row_hover"],
+            text_color=self.current_theme["accent_text"],
             command=self._toggle_think_mode,
         )
         self.think_btn.pack(side="right", padx=(4, 6))
@@ -463,46 +485,26 @@ class SpotlightUI(ctk.CTk):
         self.beacon_btn = ctk.CTkButton(
             self.capsule_bar,
             text="⚡",
-            width=36,
-            height=36,
-            corner_radius=18,
-            font=("Segoe UI Emoji", 14, "bold"),
-            fg_color=YELLOW_ACCENT,
-            border_width=2,
-            border_color=BORDER_BLACK,
-            hover_color="#FACC15",
-            text_color=TEXT_MAIN,
+            width=32,
+            height=32,
+            corner_radius=16,
+            font=("Segoe UI Emoji", 13, "bold"),
+            fg_color=self.current_theme["accent"],
+            border_width=1.5,
+            border_color=self.current_theme["border_color"],
+            hover_color=self.current_theme["bg_row_hover"],
+            text_color=self.current_theme["accent_text"],
             command=self.on_execute,
         )
-        self.beacon_btn.pack(side="right", padx=(4, 8))
+        self.beacon_btn.pack(side="right", padx=(2, 6))
 
-        # ── Browse View Container (Holds chips, filter pills, and suggestions) ──
+        # ── Browse View Container ──
         self.browse_container = ctk.CTkFrame(self.card, fg_color="transparent")
         self.browse_container.pack(fill="both", expand=True, padx=0, pady=0)
 
-        # ── Suggestion Chips Bar ──────────────────────────────────
-        self.chips_frame = ctk.CTkFrame(self.browse_container, fg_color="transparent", height=32)
-        self.chips_frame.pack(fill="x", padx=16, pady=(0, 8))
-
-        for chip_label, chip_cmd in SUGGESTION_CHIPS:
-            cbtn = ctk.CTkButton(
-                self.chips_frame,
-                text=chip_label,
-                font=("Segoe UI", 11, "bold"),
-                height=26,
-                corner_radius=13,
-                fg_color="#FFFFFF",
-                border_width=1.5,
-                border_color=BORDER_BLACK,
-                hover_color=YELLOW_ACCENT,
-                text_color=TEXT_MAIN,
-                command=lambda cmd=chip_cmd: self._on_chip_click(cmd),
-            )
-            cbtn.pack(side="left", padx=(0, 6))
-
-        # ── Category Filter Bar ────────────────────────────────────
-        self.filter_bar = ctk.CTkFrame(self.browse_container, fg_color="transparent", height=30)
-        self.filter_bar.pack(fill="x", padx=18, pady=(0, 8))
+        # ── Clean Category Filter Strip ───────────────────────────
+        self.filter_bar = ctk.CTkFrame(self.browse_container, fg_color="transparent", height=28)
+        self.filter_bar.pack(fill="x", padx=16, pady=(0, 6))
 
         self.active_category = "ALL"
         self._filter_buttons = {}
@@ -510,14 +512,14 @@ class SpotlightUI(ctk.CTk):
             btn = ctk.CTkButton(
                 self.filter_bar,
                 text=cat_label,
-                font=("Segoe UI", 11, "bold"),
+                font=("Segoe UI", 10, "bold"),
                 height=24,
-                corner_radius=12,
-                fg_color=YELLOW_ACCENT if cat_key == "ALL" else "#FFFFFF",
+                corner_radius=10,
+                fg_color=self.current_theme["accent"] if cat_key == "ALL" else self.current_theme["bg_card"],
                 border_width=1.5,
-                border_color=BORDER_BLACK,
-                hover_color=YELLOW_ACCENT,
-                text_color=TEXT_MAIN,
+                border_color=self.current_theme["border_color"],
+                hover_color=self.current_theme["accent"],
+                text_color=self.current_theme["accent_text"] if cat_key == "ALL" else self.current_theme["text_main"],
                 command=lambda k=cat_key: self._set_category(k),
             )
             btn.pack(side="left", padx=(0, 6))
@@ -525,7 +527,7 @@ class SpotlightUI(ctk.CTk):
 
         # ── Suggestions Container ─────────────────────────────────
         self.suggestions_frame = ctk.CTkFrame(self.browse_container, fg_color="transparent")
-        self.suggestions_frame.pack(fill="both", expand=True, padx=16, pady=(2, 6))
+        self.suggestions_frame.pack(fill="both", expand=True, padx=16, pady=(0, 6))
 
         # ── Execution Telemetry Drawer (Hidden until running) ──────
         self.exec_drawer = ctk.CTkFrame(
@@ -673,12 +675,16 @@ class SpotlightUI(ctk.CTk):
         t = THEMES[theme_key]
         self.current_theme = t
 
+        # Update root window background to match card (eliminates any halo)
+        self.configure(fg_color=t["bg_card"])
+
         # Update card container
         self.card.configure(fg_color=t["bg_card"], border_color=t["border_color"])
 
         # Update top header
-        self.title_badge.configure(text_color=t["text_main"])
-        self.status_pill.configure(fg_color=t["accent"], text_color=t["accent_text"])
+        self.title_badge.configure(text_color=t["text_dim"])
+        self.status_pill.configure(text_color=t["mint"])
+        self.shortcut_hint.configure(text_color=t["text_dim"])
 
         # Update capsule search bar
         self.capsule_bar.configure(fg_color=t["bg_entry"], border_color=t["border_color"])
@@ -707,16 +713,6 @@ class SpotlightUI(ctk.CTk):
             text_color=t["accent_text"],
             border_color=t["border_color"],
         )
-
-        # Update chips
-        for child in self.chips_frame.winfo_children():
-            if isinstance(child, ctk.CTkButton):
-                child.configure(
-                    fg_color=t["bg_card"],
-                    border_color=t["border_color"],
-                    text_color=t["text_main"],
-                    hover_color=t["accent"],
-                )
 
         # Update category filters
         for key, btn in self._filter_buttons.items():
@@ -748,6 +744,7 @@ class SpotlightUI(ctk.CTk):
 
         # Update suggestions list
         self._update_suggestions()
+        _enable_dwm_rounded_corners(self)
 
     def _reload_theme_from_settings(self):
         try:
@@ -961,11 +958,10 @@ class SpotlightUI(ctk.CTk):
 
     def _resize_for_content(self, row_count: int):
         header_h = 76
-        chips_h = 36
-        filter_h = 34
-        footer_h = 38
-        row_h = 58
-        new_h = header_h + chips_h + filter_h + (row_count * row_h) + footer_h + 16
+        filter_h = 32
+        footer_h = 34
+        row_h = 54
+        new_h = header_h + filter_h + (row_count * row_h) + footer_h + 12
         self._resize_window(min(new_h, self._H_EXPANDED))
 
     def _resize_window(self, height: int):
@@ -973,6 +969,7 @@ class SpotlightUI(ctk.CTk):
         sw = self.winfo_screenwidth()
         pos_x = int(sw / 2 - self._W / 2)
         self.geometry(f"{self._W}x{height}+{pos_x}+{self._pos_y}")
+        _enable_dwm_rounded_corners(self)
 
     # ── Keyboard Navigation Handlers ───────────────────────────────
     def _on_key_down(self, event):
@@ -1128,6 +1125,7 @@ class SpotlightUI(ctk.CTk):
                         pass
                     if on_complete:
                         on_complete()
+                    _enable_dwm_rounded_corners(self)
 
         _step(0)
 
@@ -1236,14 +1234,15 @@ class SpotlightUI(ctk.CTk):
         self.hud_container.pack_forget()
         self.exec_drawer.pack_forget()
 
-        self.top_header.pack(fill="x", padx=20, pady=(12, 6))
+        self.top_header.pack(fill="x", padx=18, pady=(10, 4))
         self.capsule_bar.pack(fill="x", padx=16, pady=(2, 8))
         self.footer.pack(fill="x", side="bottom", padx=20, pady=(4, 10))
         self.browse_container.pack(fill="both", expand=True, padx=0, pady=0)
 
         self.search_entry.configure(state="normal")
-        self.status_pill.configure(text="⚡ SYSTEM READY", fg_color=t["accent"], text_color=t["accent_text"])
+        self.status_pill.configure(text="● READY", text_color=t["mint"])
         self._update_suggestions()
+        _enable_dwm_rounded_corners(self)
 
     # ── Hotkey Poller & Toggle ─────────────────────────────────────
     def request_toggle(self):
@@ -1316,6 +1315,7 @@ class SpotlightUI(ctk.CTk):
                 self.geometry(f"{self._W}x{self._current_h}+{self._pos_x}+{self._pos_y}")
                 self.is_visible = True
                 self._is_animating = False
+                _enable_dwm_rounded_corners(self)
                 try:
                     self.focus_force()
                     self.search_entry.focus_set()
@@ -1370,30 +1370,25 @@ class _CtkToast(ctk.CTkToplevel):
         self.attributes("-topmost", True)
         self.attributes("-alpha", 0.0)
 
-        if sys.platform.startswith("win"):
-            try:
-                self.attributes("-transparentcolor", TRANSPARENT_KEY)
-            except Exception:
-                pass
-        self.configure(fg_color=TRANSPARENT_KEY)
-
         sw = self.winfo_screenwidth()
-        W, H = 460, 56
+        W, H = 460, 52
         self.geometry(f"{W}x{H}+{int(sw/2 - W/2)}+26")
+        self.configure(fg_color=color)
 
         frame = ctk.CTkFrame(
             self,
             fg_color=color,
             corner_radius=14,
-            border_width=2.5,
+            border_width=BORDER_WIDTH,
             border_color=BORDER_BLACK,
         )
-        frame.pack(fill="both", expand=True, padx=4, pady=4)
+        frame.pack(fill="both", expand=True, padx=0, pady=0)
+        _enable_dwm_rounded_corners(self)
 
         ctk.CTkLabel(
             frame,
             text=message,
-            font=("Segoe UI", 13, "bold"),
+            font=("Segoe UI", 12, "bold"),
             text_color=TEXT_MAIN,
         ).pack(expand=True)
 

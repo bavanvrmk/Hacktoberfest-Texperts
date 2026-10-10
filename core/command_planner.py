@@ -113,9 +113,9 @@ def compile_customer_intent_workflow(command: str, complete_fn) -> list:
         f"Customer Request: \"{command}\"\n\n"
         "Deconstruct this customer intent into an ordered, executable JSON list of steps.\n"
         "Allowed action types:\n"
-        "- launch_app: target is app name (e.g. 'WhatsApp', 'Notepad', 'Google Chrome')\n"
-        "- open_url: target is a full URL or web service\n"
-        "- click: target is description of UI element to locate visually and click (e.g. 'Search bar', 'Contact')\n"
+        "- launch_app: target is app name (e.g. 'WhatsApp', 'Notepad')\n"
+        "- open_url: target is a full URL or web address to open in default browser (e.g. 'http://127.0.0.1:8000', 'https://google.com')\n"
+        "- click: target is description of UI element to locate visually and click (e.g. 'Search bar', 'Send button')\n"
         "- type: target is short string to type (e.g. 'pranav cceb', 'hi')\n"
         "- generate: target is the topic/subject to compose rich factual text/report/notes for (e.g. 'Comprehensive factual details, background, and summary of the Jantar Mantar protest'). Use 'generate' whenever the user wants information, research, or notes written into an app!\n"
         "- hotkey: target is keyboard shortcut (e.g. 'enter', 'ctrl+f', 'esc')\n"
@@ -125,9 +125,11 @@ def compile_customer_intent_workflow(command: str, complete_fn) -> list:
         "- close_app: target is app name to close\n\n"
         "Guidelines:\n"
         "1. For messaging apps (WhatsApp, Slack): launch_app -> wait 2.0s -> click search bar -> type contact name -> hotkey enter -> wait 1.0s -> type message -> hotkey enter.\n"
-        "2. For researching, fetching details, or writing notes in Notepad/documents: launch_app -> wait 1.5s -> generate (with full factual topic description). NEVER use placeholder brackets like '[summarized content from search results]'. Use 'generate' so the model writes real content.\n"
-        "3. For screen reading/summarization: action is 'summarize_screen'.\n"
-        "4. Output strictly valid JSON only with no markdown backticks:\n"
+        "   CRITICAL: In WhatsApp, pressing Enter after typing the contact name opens the chat and directly focuses the message compose field. NEVER click 'Contact' or 'Contact button' after pressing enter.\n"
+        "2. For opening websites or web services: action MUST be 'open_url' with the target URL. NEVER launch Chrome unless the user explicitly demanded 'Google Chrome' by name. Websites must open in the user's default browser.\n"
+        "3. For researching, fetching details, or writing notes in Notepad/documents: launch_app -> wait 1.5s -> generate (with full factual topic description). NEVER use placeholder brackets like '[summarized content from search results]'. Use 'generate' so the model writes real content.\n"
+        "4. For screen reading/summarization: action is 'summarize_screen'.\n"
+        "5. Output strictly valid JSON only with no markdown backticks:\n"
         "{\"workflow_name\": \"...\", \"steps\": [{\"action\": \"...\", \"target\": \"...\", \"description\": \"...\"}]}"
     )
     try:
@@ -146,7 +148,30 @@ def compile_customer_intent_workflow(command: str, complete_fn) -> list:
                 if action in _ALLOWED and target:
                     steps.append({"action": action, "target": target, "description": desc})
             if steps:
-                return steps
+                # Post-processing sanitization:
+                # 1. Drop redundant "click Contact" steps that occur after "hotkey enter" in messaging workflows.
+                # 2. Prevent launching Chrome when user intended to open a website in default browser.
+                sanitized = []
+                saw_enter_chat = False
+                for step in steps:
+                    act = step.get("action")
+                    tgt = str(step.get("target", "")).strip()
+                    tgt_lower = tgt.lower()
+
+                    if act == "hotkey" and tgt_lower == "enter":
+                        saw_enter_chat = True
+                        sanitized.append(step)
+                        continue
+
+                    if saw_enter_chat and act == "click" and any(k in tgt_lower for k in ("contact", "contact button", "chat item", "conversation")):
+                        print(f"[Planner] Stripping redundant post-enter click on contact: {tgt}")
+                        continue
+
+                    if act == "type":
+                        saw_enter_chat = False
+
+                    sanitized.append(step)
+                return sanitized
     except Exception as exc:
         print(f"[Planner] compile_customer_intent_workflow error: {exc}")
 
@@ -216,10 +241,19 @@ def _plan_clause(clause: str):
     if hotkey:
         return [{"action": "hotkey", "target": hotkey.group(1).strip()}]
 
+    # Direct URL or website navigation: open in default browser
+    url_match = re.search(r"^(?:open|navigate to|browse to|go to|visit|browse)?\s*(https?://\S+|www\.\S+|[\w-]+\.(?:com|org|net|edu|io|ai|gov|in|local|app|dev)(?:/\S*)?)$", clause, re.IGNORECASE)
+    if url_match:
+        target_url = url_match.group(1).strip()
+        return [{"action": "open_url", "target": target_url, "description": f"Open {target_url} in default browser"}]
+
     opened = _GOTO.match(clause)
     if opened:
+        target = opened.group(1).strip()
+        if re.search(r"https?://|\.com|\.org|\.net|\.edu|\.io|\.ai|\.gov|\.in|127\.0\.0\.1|localhost", target, re.IGNORECASE):
+            return [{"action": "open_url", "target": target, "description": f"Open {target} in default browser"}]
         return [
-            {"action": "type", "target": opened.group(1).strip()},
+            {"action": "type", "target": target},
             {"action": "hotkey", "target": "enter"},
         ]
 

@@ -7,7 +7,7 @@
   "action_delay": 0.3,
   "pii_redaction_enabled": true,
   "visual_thinking_enabled": true,
-  "spotlight_theme": "dark_brutalist",
+  "spotlight_theme": "neo_brutalist",
   "spotlight_hotkey": "ctrl+space",
   "auto_refresh_interval": 3000,
   "air_gapped_mode": true

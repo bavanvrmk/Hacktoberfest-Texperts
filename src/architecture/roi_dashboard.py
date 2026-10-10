@@ -286,7 +286,7 @@ async def api_spotlight_suggestions():
             "id": "roi_dashboard",
             "category": "TELEMETRY",
             "title": "Launch Live ROI & Financial Engine",
-            "command": "Open Chrome and navigate to http://127.0.0.1:8000",
+            "command": "Open http://127.0.0.1:8000 in default browser",
             "subtitle": "Real-time Telemetry, PII Audit Logs & Cost Metrics",
             "badge": "Browser"
         },
